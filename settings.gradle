@@ -1,0 +1,18 @@
+pluginManagement {
+    repositories {
+        maven {
+            name = 'Fabric'
+            url = 'https://maven.fabricmc.net/'
+        }
+        gradlePluginPortal()
+    }
+}
+
+
+rootProject.name = 'paynow-minecraft'
+include 'paynow-lib'
+include 'paynow-bukkit'
+include 'paynow-bungeecord'
+include 'paynow-sponge'
+include 'paynow-velocity'
+include 'paynow-fabric'

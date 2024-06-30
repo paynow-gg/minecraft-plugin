@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "paynow-fabric",
+  "version": "${version}",
+  "name": "PayNow",
+  "description": "Official plugin for the PayNow.gg store integration.",
+  "authors": [],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/paynow-fabric/icon.png",
+  "environment": "server",
+  "entrypoints": {
+    "server": [
+      "gg.paynow.paynowfabric.PayNowFabric"
+    ]
+  },
+  "mixins": [
+    "paynow-fabric.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}

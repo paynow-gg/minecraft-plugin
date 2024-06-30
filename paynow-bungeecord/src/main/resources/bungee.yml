@@ -1,0 +1,4 @@
+name: paynow
+version: 1.0
+author: PayNow
+main: gg.paynow.paynowbungee.PayNowBungee
