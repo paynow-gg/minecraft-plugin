@@ -13,9 +13,3 @@ allprojects {
     group = 'gg.paynow'
     version = '0.0.1'
 }
-
-subprojects {
-    tasks.withType(Jar).configureEach {
-        archiveFileName.set("${project.name}-${project.version}.jar")
-    }
-}

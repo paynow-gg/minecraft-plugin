@@ -1,3 +1,4 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.spongepowered.gradle.plugin.config.PluginLoaders
 import org.spongepowered.plugin.metadata.model.PluginDependency
 
@@ -71,3 +72,7 @@ tasks.register("wrapper", Wrapper::class) {
 tasks.register("prepareKotlinBuildScriptModel"){}
 
 tasks.register("ideaSyncTask") {}
+
+tasks.withType(ShadowJar::class).configureEach {
+    archiveClassifier.set("")
+}
