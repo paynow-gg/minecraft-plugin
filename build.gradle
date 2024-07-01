@@ -1,2 +1,24 @@
 group = 'gg.paynow'
 version = '1.0-SNAPSHOT'
+
+tasks.register('buildEverything', GradleBuild) {
+    // Build the Bukkit plugin
+    tasks = ['shadowJar']
+    dir = 'paynow-bukkit'
+
+    // Build the BungeeCord plugin
+    tasks = ['shadowJar']
+    dir = 'paynow-bungeecord'
+
+    // Build the Velocity plugin
+    tasks = ['shadowJar']
+    dir = 'paynow-velocity'
+
+    // Build the Sponge plugin
+    tasks = ['shadowJar']
+    dir = 'paynow-sponge'
+
+    // Build the Fabric mod
+    tasks = ['build']
+    dir = 'paynow-fabric'
+}

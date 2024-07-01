@@ -1,15 +1,10 @@
 plugins {
     id 'fabric-loom' version '1.6.9'
     id 'maven-publish'
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
 version = project.mod_version
 group = project.maven_group
-
-base {
-    archivesName = project.archives_base_name
-}
 
 repositories {
     // Add repositories to retrieve artifacts from in here.
@@ -29,6 +24,7 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
     implementation project(":paynow-lib")
+    include project(":paynow-lib")
 }
 
 processResources {
