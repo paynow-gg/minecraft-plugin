@@ -1,6 +1,3 @@
-group = 'gg.paynow'
-version = '1.0-SNAPSHOT'
-
 tasks.register('buildEverything', GradleBuild) {
     tasks = [
             'paynow-lib:build',
@@ -10,4 +7,9 @@ tasks.register('buildEverything', GradleBuild) {
             'paynow-sponge:shadowJar',
             'paynow-fabric:build'
     ]
+}
+
+allprojects {
+    group = 'gg.paynow'
+    version = '0.0.1'
 }

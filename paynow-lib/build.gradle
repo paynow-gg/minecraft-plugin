@@ -2,9 +2,6 @@ plugins {
     id 'java'
 }
 
-group = 'gg.paynow'
-version = '1.0-SNAPSHOT'
-
 repositories {
     mavenCentral()
 }

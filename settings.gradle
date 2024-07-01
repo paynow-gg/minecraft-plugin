@@ -8,7 +8,6 @@ pluginManagement {
     }
 }
 
-
 rootProject.name = 'paynow-minecraft'
 include 'paynow-lib'
 include 'paynow-bukkit'
