@@ -25,3 +25,14 @@ jobs:
 
       - name: Execute Gradle build
         run: ./gradlew buildEverything
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            paynow-bukkit/build/libs/*.jar
+            paynow-bungeecord/build/libs/*.jar
+            paynow-velocity/build/libs/*.jar
+            paynow-fabric/build/libs/*.jar
+            paynow-sponge/build/libs/*.jar
