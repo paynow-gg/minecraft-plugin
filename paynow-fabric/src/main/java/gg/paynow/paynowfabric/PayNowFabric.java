@@ -7,10 +7,12 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.List;
-import java.util.logging.Logger;
+import java.util.logging.Level;
 
 public class PayNowFabric implements DedicatedServerModInitializer {
 
@@ -18,7 +20,7 @@ public class PayNowFabric implements DedicatedServerModInitializer {
 
     private PayNowLib payNowLib;
 
-    public static final Logger LOGGER = Logger.getLogger("PayNow");
+    public static final Logger LOGGER = LoggerFactory.getLogger("PayNow");
 
     private int lastCheck = 0;
 
@@ -33,7 +35,15 @@ public class PayNowFabric implements DedicatedServerModInitializer {
         this.server = server;
 
         this.payNowLib = new PayNowLib(command -> server.getCommandManager().executeWithPrefix(server.getCommandSource(), command) == 1);
-        this.payNowLib.setLogger(LOGGER);
+        this.payNowLib.setLogCallback((s, level) -> {
+            if(level == Level.SEVERE) {
+                LOGGER.error(s);
+            } else if(level == Level.WARNING) {
+                LOGGER.warn(s);
+            } else {
+                LOGGER.info(s);
+            }
+        });
 
         this.payNowLib.loadPayNowConfig(this.getConfigFile());
 

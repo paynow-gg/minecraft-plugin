@@ -2,6 +2,7 @@ package gg.paynow.paynowsponge;
 
 import com.google.inject.Inject;
 import gg.paynow.paynowlib.PayNowLib;
+import org.apache.logging.log4j.Logger;
 import org.spongepowered.api.Server;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.SystemSubject;
@@ -21,11 +22,15 @@ import org.spongepowered.plugin.builtin.jvm.Plugin;
 import java.io.File;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
 @Plugin("paynow-sponge")
 public class PayNowSponge {
 
     private final PluginContainer container;
+
+    @Inject
+    private Logger logger;
 
     private PayNowLib payNowLib;
 
@@ -48,6 +53,16 @@ public class PayNowSponge {
                 return true;
             } catch (CommandException e) {
                 return false;
+            }
+        });
+
+        this.payNowLib.setLogCallback((s, level) -> {
+            if(level == Level.SEVERE) {
+                this.logger.error(s);
+            } else if(level == Level.WARNING) {
+                this.logger.warn(s);
+            } else {
+                this.logger.info(s);
             }
         });
 

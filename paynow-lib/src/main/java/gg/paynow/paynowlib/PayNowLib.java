@@ -11,9 +11,10 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.logging.Logger;
+import java.util.logging.Level;
 
 public class PayNowLib {
 
@@ -25,10 +26,10 @@ public class PayNowLib {
     private final Function<String, Boolean> executeCommandCallback;
 
     private final List<Consumer<PayNowConfig>> updateConfigCallbacks = new ArrayList<>();
+    
+    private BiConsumer<String, Level> logCallback = null;
 
     private PayNowConfig config = null;
-
-    private Logger logger = Logger.getLogger("PayNow");
 
     public PayNowLib(Function<String, Boolean> executeCommandCallback) {
         this.executeCommandCallback = executeCommandCallback;
@@ -47,10 +48,10 @@ public class PayNowLib {
     }
 
     public void fetchPendingCommands(List<String> names) {
-        this.logger.info("Fetching pending commands");
+        this.log("Fetching pending commands", Level.INFO);
         String apiToken = this.config.getApiToken();
         if(apiToken == null) {
-            this.logger.severe("API Token is not set");
+            this.log("API Token is not set", Level.WARNING);
             return;
         }
 
@@ -68,15 +69,15 @@ public class PayNowLib {
 
     public void handleResponse(HttpResponse<String> response, List<String> names) {
         if(response.statusCode() != 200) {
-            this.logger.severe("Failed to fetch commands: " + response.body());
+            this.log("Failed to fetch commands: " + response.body(), Level.SEVERE);
             return;
         }
 
         Gson gson = new Gson();
         List<QueuedCommand> commands = gson.fromJson(response.body(), new TypeToken<List<QueuedCommand>>(){}.getType());
         if(commands == null) {
-            this.logger.severe("Failed to parse commands");
-            this.logger.severe(response.body());
+            this.log("Failed to parse commands", Level.SEVERE);
+            this.log(response.body(), Level.SEVERE);
             return;
         }
 
@@ -99,12 +100,12 @@ public class PayNowLib {
                 this.successfulCommands.add(command.getAttemptId());
                 this.executedCommands.add(command.getAttemptId());
             } else {
-                this.logger.severe("Failed to execute command: " + command.getCommand());
+                this.log("Failed to execute command: " + command.getCommand(), Level.WARNING);
             }
         }
 
         if(this.config.doesLogCommandExecutions()) {
-            this.logger.info("Received " + commands.size() + " commands, executed " + this.successfulCommands.size());
+            this.log("Received " + commands.size() + " commands, executed " + this.successfulCommands.size(), Level.INFO);
         }
 
         this.acknowledgeCommands(this.successfulCommands);
@@ -115,7 +116,7 @@ public class PayNowLib {
 
         String apiToken = this.config.getApiToken();
         if(apiToken == null) {
-            this.logger.severe("API Token is not set");
+            this.log("API Token is not set", Level.WARNING);
             return;
         }
 
@@ -134,7 +135,7 @@ public class PayNowLib {
 
     private void handleAcknowledgeResponse(HttpResponse<String> response) {
         if(!PayNowUtils.isSuccess(response.statusCode())) {
-            this.logger.severe("Failed to acknowledge commands: " + response.body());
+            this.log("Failed to acknowledge commands: " + response.body(), Level.SEVERE);
         }
     }
 
@@ -144,7 +145,7 @@ public class PayNowLib {
             try {
                 configFile.createNewFile();
             } catch (IOException e) {
-                this.getLogger().severe("Failed to create config file, using default values");
+                this.log("Failed to create config file, using default values", Level.SEVERE);
                 this.config = new PayNowConfig();
                 return;
             }
@@ -155,13 +156,13 @@ public class PayNowLib {
             String configJson = new String(is.readAllBytes());
             PayNowConfig config = gson.fromJson(configJson, PayNowConfig.class);
             if(config == null) {
-                this.getLogger().severe("Failed to parse config, using default values");
+                this.log("Failed to parse config, using default values", Level.SEVERE);
                 this.config = new PayNowConfig();
             } else {
                 this.config = config;
             }
         } catch (IOException e) {
-            this.getLogger().severe("Failed to read config file, using default values");
+            this.log("Failed to read config file, using default values", Level.SEVERE);
             this.config = new PayNowConfig();
         }
     }
@@ -172,7 +173,7 @@ public class PayNowLib {
             try {
                 configFile.createNewFile();
             } catch (IOException e) {
-                this.getLogger().severe("Failed to create config file");
+                this.log("Failed to create config file", Level.SEVERE);
                 return;
             }
 
@@ -181,7 +182,7 @@ public class PayNowLib {
         try(OutputStream os = new FileOutputStream(configFile)) {
             os.write(gson.toJson(this.config).getBytes());
         } catch (IOException e) {
-            this.getLogger().severe("Failed to save config file");
+            this.log("Failed to save config file", Level.SEVERE);
         }
     }
 
@@ -216,12 +217,12 @@ public class PayNowLib {
         return formatted.toString();
     }
 
-    public void setLogger(Logger logger) {
-        this.logger = logger;
+    public void setLogCallback(BiConsumer<String, Level> logCallback) {
+        this.logCallback = logCallback;
     }
 
-    public Logger getLogger() {
-        return logger;
+    private void log(String message, Level level) {
+        if(this.logCallback != null) this.logCallback.accept(message, level);
     }
 
     public PayNowConfig getConfig() {

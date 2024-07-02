@@ -21,7 +21,7 @@ public class PayNowBungee extends Plugin {
             CommandSender console = ProxyServer.getInstance().getConsole();
             return ProxyServer.getInstance().getPluginManager().dispatchCommand(console, command);
         });
-        this.payNowLib.setLogger(this.getLogger());
+        this.payNowLib.setLogCallback((s, level) -> this.getLogger().log(level, s));
 
         this.payNowLib.loadPayNowConfig(this.getConfigFile());
 

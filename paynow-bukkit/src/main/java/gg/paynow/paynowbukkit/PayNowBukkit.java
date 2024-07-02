@@ -17,7 +17,9 @@ public class PayNowBukkit extends JavaPlugin {
     public void onEnable() {
         this.payNowLib = new PayNowLib(command -> this.getServer()
                 .dispatchCommand(this.getServer().getConsoleSender(), command));
-        this.payNowLib.setLogger(this.getLogger());
+        this.payNowLib.setLogCallback((s, level) -> {
+            this.getLogger().log(level, s);
+        });
 
         this.payNowLib.loadPayNowConfig(this.getConfigFile());
 

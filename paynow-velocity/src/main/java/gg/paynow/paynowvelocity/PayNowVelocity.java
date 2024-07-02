@@ -56,6 +56,8 @@ public class PayNowVelocity {
             }
         });
 
+        this.payNowLib.setLogCallback((s, level) -> this.logger.log(level, s));
+
         this.payNowLib.loadPayNowConfig(this.getConfigFile());
 
         this.payNowLib.onUpdateConfig(config -> this.startRunnable());
