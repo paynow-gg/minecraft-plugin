@@ -187,7 +187,7 @@ public class PayNowLib {
 
     private String formatPlayers(List<String> names, List<UUID> uuids) {
         StringBuilder formatted = new StringBuilder();
-        formatted.append("{\"customer_names\":["); // TODO: Change
+        formatted.append("{\"customer_names\":[");
         for(int i = 0; i < names.size(); i++) {
             formatted.append("\"").append(names.get(i)).append("\"");
             if(i < names.size() - 1) {

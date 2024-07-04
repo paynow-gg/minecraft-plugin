@@ -9,7 +9,7 @@ public class QueuedCommand {
     @SerializedName("attempt_id")
     private String attemptId;
 
-    @SerializedName("customer_name") // TODO: use nickname
+    @SerializedName("customer_name")
     private String customerName;
 
     @SerializedName("minecraft_uuid")
