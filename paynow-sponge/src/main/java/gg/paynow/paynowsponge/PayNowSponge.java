@@ -15,12 +15,13 @@ import org.spongepowered.api.event.lifecycle.StartedEngineEvent;
 import org.spongepowered.api.event.lifecycle.StoppingEngineEvent;
 import org.spongepowered.api.scheduler.ScheduledTask;
 import org.spongepowered.api.scheduler.Task;
-import org.spongepowered.api.util.Nameable;
 import org.spongepowered.plugin.PluginContainer;
 import org.spongepowered.plugin.builtin.jvm.Plugin;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
@@ -82,10 +83,9 @@ public class PayNowSponge {
                 .plugin(container)
                 .interval(this.payNowLib.getConfig().getApiCheckInterval(), TimeUnit.SECONDS)
                         .execute(() -> {
-                            List<String> onlinePlayers = Sponge.server().onlinePlayers().stream()
-                                    .map(Nameable::name)
-                                    .toList();
-                            this.payNowLib.fetchPendingCommands(onlinePlayers);
+                            List<String> onlinePlayersName = new ArrayList<>();
+                            List<UUID> onlinePlayersUUID = new ArrayList<>();
+                            this.payNowLib.fetchPendingCommands(onlinePlayersName, onlinePlayersUUID);
                         })
                 .build());
     }

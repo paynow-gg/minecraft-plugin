@@ -2,13 +2,18 @@ package gg.paynow.paynowlib;
 
 import com.google.gson.annotations.SerializedName;
 
+import java.util.UUID;
+
 public class QueuedCommand {
 
     @SerializedName("attempt_id")
     private String attemptId;
 
-    @SerializedName("steam_id") // TODO: use nickname
-    private String nickname;
+    @SerializedName("customer_name") // TODO: use nickname
+    private String customerName;
+
+    @SerializedName("minecraft_uuid")
+    private UUID customerUUID;
 
     private String command;
 
@@ -17,14 +22,6 @@ public class QueuedCommand {
 
     @SerializedName("queued_at")
     private String queuedAt;
-
-    public QueuedCommand(String attemptId, String nickname, String command, boolean onlineOnly, String queuedAt) {
-        this.attemptId = attemptId;
-        this.nickname = nickname;
-        this.command = command;
-        this.onlineOnly = onlineOnly;
-        this.queuedAt = queuedAt;
-    }
 
     public QueuedCommand() {
 
@@ -38,8 +35,8 @@ public class QueuedCommand {
         this.attemptId = attemptId;
     }
 
-    public String getNickname() {
-        return nickname;
+    public String getCustomerName() {
+        return customerName;
     }
 
     public String getCommand() {

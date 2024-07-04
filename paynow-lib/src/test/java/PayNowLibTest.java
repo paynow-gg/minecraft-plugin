@@ -21,14 +21,14 @@ public class PayNowLibTest {
                 [
                     {
                         "attempt_id": "1",
-                        "steam_id": "player1",
+                        "customer_name": "player1",
                         "command": "command1",
                         "online_only": true,
                         "queued_at": 123456
                     },
                     {
                         "attempt_id": "2",
-                        "steam_id": "player2",
+                        "customer_name": "player2",
                         "command": "command2",
                         "online_only": false,
                         "queued_at": 123457
@@ -36,7 +36,8 @@ public class PayNowLibTest {
                 ]
                 """;
         HttpResponse<String> response = new SimulatedHttpResponse(responseJson);
-        paynowLib.handleResponse(response, List.of("player1", "player2"));
+        int successCount = paynowLib.handleResponse(response);
+        assert successCount == 2;
     }
 
 }

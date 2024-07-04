@@ -6,7 +6,9 @@ import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.plugin.Plugin;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public class PayNowBungee extends Plugin {
@@ -43,10 +45,13 @@ public class PayNowBungee extends Plugin {
         }
 
         runnableId = ProxyServer.getInstance().getScheduler().schedule(this, () -> {
-            List<String> onlinePlayers = ProxyServer.getInstance().getPlayers().stream()
-                    .map(CommandSender::getName)
-                    .toList();
-            payNowLib.fetchPendingCommands(onlinePlayers);
+            List<String> onlinePlayersNames = new ArrayList<>();
+            List<UUID> onlinePlayersUUIDs = new ArrayList<>();
+            ProxyServer.getInstance().getPlayers().forEach(player -> {
+                onlinePlayersNames.add(player.getName());
+                onlinePlayersUUIDs.add(player.getUniqueId());
+            });
+            payNowLib.fetchPendingCommands(onlinePlayersNames, onlinePlayersUUIDs);
         }, 0, this.payNowLib.getConfig().getApiCheckInterval(), TimeUnit.SECONDS).getId();
     }
 

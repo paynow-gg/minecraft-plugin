@@ -16,7 +16,9 @@ import gg.paynow.paynowlib.PayNowLib;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -82,10 +84,13 @@ public class PayNowVelocity {
         }
 
         this.task = this.server.getScheduler().buildTask(this, () -> {
-            List<String> onlinePlayers = this.server.getAllPlayers().stream()
-                    .map(Player::getUsername)
-                    .toList();
-            this.payNowLib.fetchPendingCommands(onlinePlayers);
+            List<String> onlinePlayersName = new ArrayList<>();
+            List<UUID> onlinePlayersUUID = new ArrayList<>();
+            for (Player player : this.server.getAllPlayers()) {
+                onlinePlayersName.add(player.getUsername());
+                onlinePlayersUUID.add(player.getUniqueId());
+            }
+            this.payNowLib.fetchPendingCommands(onlinePlayersName, onlinePlayersUUID);
         }).repeat(this.payNowLib.getConfig().getApiCheckInterval(), TimeUnit.SECONDS).schedule();
     }
 

@@ -11,6 +11,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -47,7 +48,7 @@ public class PayNowLib {
         this.updateConfigCallbacks.add(callback);
     }
 
-    public void fetchPendingCommands(List<String> names) {
+    public void fetchPendingCommands(List<String> names, List<UUID> uuids) {
         this.log("Fetching pending commands", Level.INFO);
         String apiToken = this.config.getApiToken();
         if(apiToken == null) {
@@ -60,17 +61,17 @@ public class PayNowLib {
                 .uri(API_URL)
                 .setHeader("Content-Type", "application/json")
                 .setHeader("Authorization", "Gameserver " + apiToken)
-                .POST(HttpRequest.BodyPublishers.ofString(formatNames(names)))
+                .POST(HttpRequest.BodyPublishers.ofString(formatPlayers(names, uuids)))
                 .build();
 
         client.sendAsync(request, responseInfo -> HttpResponse.BodySubscribers.ofString(StandardCharsets.UTF_8))
-                .thenAccept(response -> handleResponse(response, names));
+                .thenAccept(this::handleResponse);
     }
 
-    public void handleResponse(HttpResponse<String> response, List<String> names) {
+    public int handleResponse(HttpResponse<String> response) {
         if(response.statusCode() != 200) {
             this.log("Failed to fetch commands: " + response.body(), Level.SEVERE);
-            return;
+            return 0;
         }
 
         Gson gson = new Gson();
@@ -78,22 +79,18 @@ public class PayNowLib {
         if(commands == null) {
             this.log("Failed to parse commands", Level.SEVERE);
             this.log(response.body(), Level.SEVERE);
-            return;
+            return 0;
         }
 
-        processCommands(commands, names);
+        return processCommands(commands);
     }
 
-    private void processCommands(List<QueuedCommand> commands, List<String> names) {
-        if(commands.isEmpty()) return;
+    private int processCommands(List<QueuedCommand> commands) {
+        if(commands.isEmpty()) return 0;
 
         this.successfulCommands.clear();
         for (QueuedCommand command : commands) {
             if(this.executedCommands.contains(command.getAttemptId())) continue;
-
-            if(command.isOnlineOnly() && names.stream().noneMatch(s -> s.equalsIgnoreCase(command.getNickname()))) {
-                continue;
-            }
 
             boolean success = this.executeCommandCallback.apply(command.getCommand());
             if(success) {
@@ -109,6 +106,8 @@ public class PayNowLib {
         }
 
         this.acknowledgeCommands(this.successfulCommands);
+
+        return this.successfulCommands.size();
     }
 
     private void acknowledgeCommands(List<String> commandsIds) {
@@ -186,16 +185,24 @@ public class PayNowLib {
         }
     }
 
-    private String formatNames(List<String> names) {
+    private String formatPlayers(List<String> names, List<UUID> uuids) {
         StringBuilder formatted = new StringBuilder();
-        formatted.append("{\"steam_ids\":["); // TODO: Change
+        formatted.append("{\"customer_names\":["); // TODO: Change
         for(int i = 0; i < names.size(); i++) {
             formatted.append("\"").append(names.get(i)).append("\"");
             if(i < names.size() - 1) {
                 formatted.append(",");
             }
         }
+        formatted.append("], \"minecraft_uuids\":[");
+        for(int i = 0; i < uuids.size(); i++) {
+            formatted.append("\"").append(uuids.get(i)).append("\"");
+            if(i < uuids.size() - 1) {
+                formatted.append(",");
+            }
+        }
         formatted.append("]}");
+        this.log("Formatted: " + formatted, Level.INFO);
         return formatted.toString();
     }
 

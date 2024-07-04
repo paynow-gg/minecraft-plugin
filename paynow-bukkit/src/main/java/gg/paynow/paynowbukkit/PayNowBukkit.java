@@ -1,11 +1,14 @@
 package gg.paynow.paynowbukkit;
 
 import gg.paynow.paynowlib.PayNowLib;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class PayNowBukkit extends JavaPlugin {
 
@@ -15,8 +18,11 @@ public class PayNowBukkit extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        this.payNowLib = new PayNowLib(command -> this.getServer()
-                .dispatchCommand(this.getServer().getConsoleSender(), command));
+        this.payNowLib = new PayNowLib(command -> {
+            Bukkit.getScheduler().runTask(this, () -> this.getServer()
+                    .dispatchCommand(this.getServer().getConsoleSender(), command));
+            return true;
+        });
         this.payNowLib.setLogCallback((s, level) -> {
             this.getLogger().log(level, s);
         });
@@ -41,10 +47,13 @@ public class PayNowBukkit extends JavaPlugin {
         }
 
         this.runnableId = this.getServer().getScheduler().scheduleSyncRepeatingTask(this, () -> {
-            List<String> onlinePlayers = this.getServer().getOnlinePlayers().stream()
-                    .map(Player::getName)
-                    .toList();
-            payNowLib.fetchPendingCommands(onlinePlayers);
+            List<String> onlinePlayersNames = new ArrayList<>();
+            List<UUID> onlinePlayersUUIDs = new ArrayList<>();
+            for(Player player : this.getServer().getOnlinePlayers()) {
+                onlinePlayersNames.add(player.getName());
+                onlinePlayersUUIDs.add(player.getUniqueId());
+            }
+            payNowLib.fetchPendingCommands(onlinePlayersNames, onlinePlayersUUIDs);
         }, 0, this.payNowLib.getConfig().getApiCheckInterval() * 20L);
     }
 

@@ -11,7 +11,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.logging.Level;
 
 public class PayNowFabric implements DedicatedServerModInitializer {
@@ -58,10 +60,13 @@ public class PayNowFabric implements DedicatedServerModInitializer {
     }
 
     private void check() {
-        List<String> onlinePlayers = this.server.getPlayerManager().getPlayerList().stream()
-                .map(PlayerEntity::getEntityName)
-                .toList();
-        payNowLib.fetchPendingCommands(onlinePlayers);
+        List<String> onlinePlayersName = new ArrayList<>();
+        List<UUID> onlinePlayersUUID = new ArrayList<>();
+        for(PlayerEntity player : this.server.getPlayerManager().getPlayerList()) {
+            onlinePlayersName.add(player.getName().getString());
+            onlinePlayersUUID.add(player.getUuid());
+        }
+        payNowLib.fetchPendingCommands(onlinePlayersName, onlinePlayersUUID);
     }
 
     public void triggerConfigUpdate(){
