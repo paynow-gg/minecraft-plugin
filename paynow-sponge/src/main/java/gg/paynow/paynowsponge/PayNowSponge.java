@@ -9,6 +9,7 @@ import org.spongepowered.api.SystemSubject;
 import org.spongepowered.api.command.Command;
 import org.spongepowered.api.command.exception.CommandException;
 import org.spongepowered.api.command.manager.CommandManager;
+import org.spongepowered.api.entity.living.player.server.ServerPlayer;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.lifecycle.RegisterCommandEvent;
 import org.spongepowered.api.event.lifecycle.StartedEngineEvent;
@@ -47,14 +48,16 @@ public class PayNowSponge {
         this.payNowLib = new PayNowLib(command -> {
             SystemSubject console = Sponge.systemSubject();
 
-            Sponge.server().causeStackManager().pushCause(console);
-            CommandManager cmdManager = Sponge.server().commandManager();
-            try {
-                cmdManager.process(console, command);
-                return true;
-            } catch (CommandException e) {
-                return false;
-            }
+            Server server = Sponge.server();
+            server.scheduler().submit(Task.builder().plugin(this.container).execute(() -> {
+                Sponge.server().causeStackManager().pushCause(console);
+                CommandManager cmdManager = Sponge.server().commandManager();
+                try {
+                    cmdManager.process(console, command);
+                } catch (CommandException ignored) {
+                }
+            }).build());
+            return true;
         });
 
         this.payNowLib.setLogCallback((s, level) -> {
@@ -85,6 +88,10 @@ public class PayNowSponge {
                         .execute(() -> {
                             List<String> onlinePlayersName = new ArrayList<>();
                             List<UUID> onlinePlayersUUID = new ArrayList<>();
+                            for (ServerPlayer onlinePlayer : Sponge.server().onlinePlayers()) {
+                                onlinePlayersName.add(onlinePlayer.name());
+                                onlinePlayersUUID.add(onlinePlayer.uniqueId());
+                            }
                             this.payNowLib.fetchPendingCommands(onlinePlayersName, onlinePlayersUUID);
                         })
                 .build());

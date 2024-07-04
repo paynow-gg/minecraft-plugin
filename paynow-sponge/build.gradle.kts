@@ -13,7 +13,7 @@ repositories {
 }
 
 sponge {
-    apiVersion("9.1.0-SNAPSHOT")
+    apiVersion("10.0.0")
     license("MIT")
     loader {
         name(PluginLoaders.JAVA_PLAIN)
