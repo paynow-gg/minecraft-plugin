@@ -12,7 +12,7 @@ After the plugin is automatically installed and configured for the first time, y
 
 ### Setting Your Token
 
-To connect your server with the PayNow gameserver, set your unique PayNow token using the following server console command:
+To connect your server with the PayNow gameserver, set your unique PayNow token using the following server command:
 
 ```plaintext
 /paynow link <token>
