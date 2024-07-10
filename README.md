@@ -34,9 +34,12 @@ For support, questions, or more information, join our Discord community:
 
 Contributions are welcome! If you'd like to improve the PayNow plugin or suggest new features, please fork the repository, make your changes, and submit a pull request.
 
+## Download
+To download the plugins please visit our release page: [Download](https://github.com/paynow-gg/minecraft-plugin/releases/latest)
+
 ## Modules:
 
-You can download the modules for your minecraft version below:
+You can find all our modules if you wish to modify them yourself below.
 - [paynow-bukkit](./paynow-bukkit)
 - [paynow-bungeecord](./paynow-bungeecord)
 - [paynow-lib](./paynow-lib)
