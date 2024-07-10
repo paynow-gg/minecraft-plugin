@@ -37,7 +37,7 @@ Contributions are welcome! If you'd like to improve the PayNow plugin or suggest
 ## Download
 To download the plugins please visit our release page: [Download](https://github.com/paynow-gg/minecraft-plugin/releases/latest)
 
-## Modules:
+## Modules
 
 You can find all our modules if you wish to modify them yourself below.
 - [paynow-bukkit](./paynow-bukkit)
