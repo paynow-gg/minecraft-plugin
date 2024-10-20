@@ -14,7 +14,7 @@ public class PayNowLibTest {
         PayNowLib paynowLib = new PayNowLib(command -> {
             System.out.println("Executing command: " + command);
             return true;
-        });
+        }, 25565, "Server");
         paynowLib.setConfig(config);
 
         String responseJson = """

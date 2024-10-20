@@ -13,15 +13,6 @@ public class PayNowConfig {
     @SerializedName("Log command executions")
     private boolean logCommandExecutions = true;
 
-    @SerializedName("IP Address")
-    private String ipAddress = null;
-
-    @SerializedName("Hostname")
-    private String hostname = null;
-
-    @SerializedName("Online")
-    private boolean online = true;
-
     @SerializedName("Debug")
     private boolean debug = false;
 
@@ -50,22 +41,6 @@ public class PayNowConfig {
 
     public void setApiToken(String apiToken) {
         this.apiToken = apiToken;
-    }
-
-    public String getIpAddress() {
-        return ipAddress;
-    }
-
-    public String getHostname() {
-        return hostname;
-    }
-
-    public boolean isOnline() {
-        return online;
-    }
-
-    public void setOnline(boolean online) {
-        this.online = online;
     }
 
     public boolean isDebug() {

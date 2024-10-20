@@ -22,7 +22,7 @@ public class PayNowBukkit extends JavaPlugin {
             Bukkit.getScheduler().runTask(this, () -> this.getServer()
                     .dispatchCommand(this.getServer().getConsoleSender(), command));
             return true;
-        });
+        }, this.getServer().getPort(), this.getServer().getMotd());
         this.payNowLib.setLogCallback((s, level) -> {
             this.getLogger().log(level, s);
         });

@@ -49,6 +49,8 @@ public class PayNowVelocity {
 
     @Subscribe
     public void onProxyInitialization(ProxyInitializeEvent event) {
+        int port = this.server.getBoundAddress().getPort();
+        String motd = this.server.getConfiguration().getMotd().toString();
         this.payNowLib = new PayNowLib(command -> {
             CommandSource console = this.server.getConsoleCommandSource();
             try {
@@ -56,7 +58,7 @@ public class PayNowVelocity {
             } catch (InterruptedException | ExecutionException e) {
                 return false;
             }
-        });
+        }, port, motd);
 
         this.payNowLib.setLogCallback((s, level) -> this.logger.log(level, s));
 

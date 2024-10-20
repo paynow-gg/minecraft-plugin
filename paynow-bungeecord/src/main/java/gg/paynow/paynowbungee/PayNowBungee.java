@@ -3,6 +3,7 @@ package gg.paynow.paynowbungee;
 import gg.paynow.paynowlib.PayNowLib;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
+import net.md_5.bungee.api.config.ListenerInfo;
 import net.md_5.bungee.api.plugin.Plugin;
 
 import java.io.File;
@@ -19,10 +20,20 @@ public class PayNowBungee extends Plugin {
 
     @Override
     public void onEnable() {
+        int port;
+        String motd;
+        try {
+            ListenerInfo listenerInfo = this.getProxy().getConfig().getListeners().iterator().next();
+            port = listenerInfo.getHost().getPort();
+            motd = listenerInfo.getMotd();
+        } catch (Exception e) {
+            this.getLogger().severe("Failed to get port and motd from bungeecord config. Please check your bungeecord config.");
+            return;
+        }
         this.payNowLib = new PayNowLib(command -> {
             CommandSender console = ProxyServer.getInstance().getConsole();
             return ProxyServer.getInstance().getPluginManager().dispatchCommand(console, command);
-        });
+        }, port, motd);
         this.payNowLib.setLogCallback((s, level) -> this.getLogger().log(level, s));
 
         this.payNowLib.loadPayNowConfig(this.getConfigFile());

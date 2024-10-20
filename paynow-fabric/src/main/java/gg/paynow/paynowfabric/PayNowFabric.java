@@ -36,7 +36,8 @@ public class PayNowFabric implements DedicatedServerModInitializer {
     private void onServerStarted(MinecraftServer server) {
         this.server = server;
 
-        this.payNowLib = new PayNowLib(command -> server.getCommandManager().executeWithPrefix(server.getCommandSource(), command) == 1);
+        this.payNowLib = new PayNowLib(command -> server.getCommandManager().executeWithPrefix(server.getCommandSource(), command) == 1,
+                server.getServerPort(), server.getServerMotd());
         this.payNowLib.setLogCallback((s, level) -> {
             if(level == Level.SEVERE) {
                 LOGGER.error(s);

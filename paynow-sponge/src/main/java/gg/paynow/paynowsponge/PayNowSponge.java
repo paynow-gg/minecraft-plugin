@@ -20,6 +20,7 @@ import org.spongepowered.plugin.PluginContainer;
 import org.spongepowered.plugin.builtin.jvm.Plugin;
 
 import java.io.File;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -45,6 +46,8 @@ public class PayNowSponge {
 
     @Listener
     public void onServerStart(final StartedEngineEvent<Server> event) {
+        int port = event.game().server().boundAddress().map(InetSocketAddress::getPort).orElse(25565);
+        String motd = event.game().server().motd().toString();
         this.payNowLib = new PayNowLib(command -> {
             SystemSubject console = Sponge.systemSubject();
 
@@ -58,7 +61,7 @@ public class PayNowSponge {
                 }
             }).build());
             return true;
-        });
+        }, port, motd);
 
         this.payNowLib.setLogCallback((s, level) -> {
             if(level == Level.SEVERE) {
