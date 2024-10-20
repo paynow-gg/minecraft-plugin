@@ -24,6 +24,7 @@ repositories {
 dependencies {
     compileOnly 'org.spigotmc:spigot-api:1.20.2-R0.1-SNAPSHOT'
     implementation project(":paynow-lib")
+    implementation group: 'com.google.code.gson', name: 'gson', version: '2.11.0'
 }
 
 shadowJar {
