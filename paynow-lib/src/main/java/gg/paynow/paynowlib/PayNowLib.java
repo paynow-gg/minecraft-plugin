@@ -19,7 +19,10 @@ import java.util.logging.Level;
 
 public class PayNowLib {
 
-    private static final URI API_URL = URI.create("https://api.paynow.gg/v1/delivery/command-queue/");
+    private static final String VERSION = "0.0.3";
+
+    private static final URI API_QUEUE_URL = URI.create("https://api.paynow.gg/v1/delivery/command-queue/");
+    private static final URI API_LINK_URL = URI.create("https://api.paynow.gg/v1/delivery/gameserver/link");
 
     private final CommandHistory executedCommands;
     private final List<String> successfulCommands;
@@ -42,6 +45,8 @@ public class PayNowLib {
         for(Consumer<PayNowConfig> callback : this.updateConfigCallbacks) {
             callback.accept(config);
         }
+
+        this.linkToken();
     }
 
     public void onUpdateConfig(Consumer<PayNowConfig> callback) {
@@ -49,7 +54,7 @@ public class PayNowLib {
     }
 
     public void fetchPendingCommands(List<String> names, List<UUID> uuids) {
-        this.log("Fetching pending commands", Level.INFO);
+        this.log("Fetching pending commands", Level.FINE);
         String apiToken = this.config.getApiToken();
         if(apiToken == null) {
             this.log("API Token is not set", Level.WARNING);
@@ -58,7 +63,7 @@ public class PayNowLib {
 
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(API_URL)
+                .uri(API_QUEUE_URL)
                 .setHeader("Content-Type", "application/json")
                 .setHeader("Authorization", "Gameserver " + apiToken)
                 .POST(HttpRequest.BodyPublishers.ofString(formatPlayers(names, uuids)))
@@ -102,7 +107,7 @@ public class PayNowLib {
         }
 
         if(this.config.doesLogCommandExecutions()) {
-            this.log("Received " + commands.size() + " commands, executed " + this.successfulCommands.size(), Level.INFO);
+            this.log("Received " + commands.size() + " commands, executed " + this.successfulCommands.size(), Level.FINE);
         }
 
         this.acknowledgeCommands(this.successfulCommands);
@@ -122,7 +127,7 @@ public class PayNowLib {
         HttpClient client = HttpClient.newHttpClient();
         String formatted = formatCommandIds(commandsIds);
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(API_URL)
+                .uri(API_QUEUE_URL)
                 .setHeader("Content-Type", "application/json")
                 .setHeader("Authorization", "Gameserver " + apiToken)
                 .method("DELETE", HttpRequest.BodyPublishers.ofString(formatted))
@@ -134,8 +139,34 @@ public class PayNowLib {
 
     private void handleAcknowledgeResponse(HttpResponse<String> response) {
         if(!PayNowUtils.isSuccess(response.statusCode())) {
-            this.log("Failed to acknowledge commands: " + response.body(), Level.SEVERE);
+            this.log("Failed to acknowledge commands: " + response.body(), Level.WARNING);
         }
+    }
+
+    private void linkToken() {
+        this.log("Linking token to game server", Level.FINE);
+        String apiToken = this.config.getApiToken();
+        if(apiToken == null) {
+            this.log("API Token is not set", Level.WARNING);
+            return;
+        }
+
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(API_LINK_URL)
+                .setHeader("Content-Type", "application/json")
+                .setHeader("Authorization", "Gameserver " + apiToken)
+                .POST(HttpRequest.BodyPublishers.ofString(String.format("""
+                        {
+                            "ip": "%s",
+                            "hostname": "%s",
+                            "platform": "%s",
+                            "version": "%s",
+                        }
+                        """, this.config.getIpAddress(), this.config.getHostname(), this.config.isOnline() ? "minecraft" : "minecraft_offline", VERSION)))
+                .build();
+
+        client.sendAsync(request, responseInfo -> HttpResponse.BodySubscribers.ofString(StandardCharsets.UTF_8));
     }
 
     public void loadPayNowConfig(File configFile) {
@@ -164,6 +195,8 @@ public class PayNowLib {
             this.log("Failed to read config file, using default values", Level.SEVERE);
             this.config = new PayNowConfig();
         }
+
+        this.linkToken();
     }
 
     public void savePayNowConfig(File configFile) {
@@ -202,7 +235,7 @@ public class PayNowLib {
             }
         }
         formatted.append("]}");
-        this.log("Formatted: " + formatted, Level.INFO);
+        this.log("Formatted: " + formatted, Level.FINE);
         return formatted.toString();
     }
 
@@ -229,6 +262,7 @@ public class PayNowLib {
     }
 
     private void log(String message, Level level) {
+        if(level == Level.FINE && !this.config.isDebug()) return;
         if(this.logCallback != null) this.logCallback.accept(message, level);
     }
 
