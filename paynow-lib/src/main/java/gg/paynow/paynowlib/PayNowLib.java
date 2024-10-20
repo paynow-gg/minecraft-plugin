@@ -35,10 +35,16 @@ public class PayNowLib {
 
     private PayNowConfig config = null;
 
-    public PayNowLib(Function<String, Boolean> executeCommandCallback) {
+    private int port;
+    private String motd;
+
+    public PayNowLib(Function<String, Boolean> executeCommandCallback, int port, String motd) {
         this.executeCommandCallback = executeCommandCallback;
         this.executedCommands = new CommandHistory(25);
         this.successfulCommands = new ArrayList<>();
+
+        this.port = port;
+        this.motd = motd;
     }
 
     public void updateConfig() {
@@ -163,7 +169,7 @@ public class PayNowLib {
                             "platform": "%s",
                             "version": "%s",
                         }
-                        """, this.config.getIpAddress(), this.config.getHostname(), this.config.isOnline() ? "minecraft" : "minecraft_offline", VERSION)))
+                        """, this.port, this.motd == null ? "" : this.motd, "minecraft", VERSION)))
                 .build();
 
         client.sendAsync(request, responseInfo -> HttpResponse.BodySubscribers.ofString(StandardCharsets.UTF_8));
