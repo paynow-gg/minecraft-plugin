@@ -37,7 +37,7 @@ public class PayNowFabric implements DedicatedServerModInitializer {
         this.server = server;
 
         this.payNowLib = new PayNowLib(command -> server.getCommandManager().executeWithPrefix(server.getCommandSource(), command) == 1,
-                server.getServerPort(), server.getServerMotd());
+                server.getServerIp() + ":" + server.getServerPort(), server.getServerMotd());
         this.payNowLib.setLogCallback((s, level) -> {
             if(level == Level.SEVERE) {
                 LOGGER.error(s);

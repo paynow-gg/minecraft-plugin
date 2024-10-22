@@ -20,11 +20,11 @@ public class PayNowBungee extends Plugin {
 
     @Override
     public void onEnable() {
-        int port;
+        String ip;
         String motd;
         try {
             ListenerInfo listenerInfo = this.getProxy().getConfig().getListeners().iterator().next();
-            port = listenerInfo.getHost().getPort();
+            ip = listenerInfo.getHost().getHostString();
             motd = listenerInfo.getMotd();
         } catch (Exception e) {
             this.getLogger().severe("Failed to get port and motd from bungeecord config. Please check your bungeecord config.");
@@ -33,7 +33,7 @@ public class PayNowBungee extends Plugin {
         this.payNowLib = new PayNowLib(command -> {
             CommandSender console = ProxyServer.getInstance().getConsole();
             return ProxyServer.getInstance().getPluginManager().dispatchCommand(console, command);
-        }, port, motd);
+        }, ip, motd);
         this.payNowLib.setLogCallback((s, level) -> this.getLogger().log(level, s));
 
         this.payNowLib.loadPayNowConfig(this.getConfigFile());
