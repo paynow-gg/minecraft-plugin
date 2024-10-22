@@ -7,8 +7,10 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.logging.Level;
 
 public class PayNowBukkit extends JavaPlugin {
 
@@ -18,14 +20,15 @@ public class PayNowBukkit extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        Arrays.stream(this.getLogger().getHandlers()).forEach(handler -> handler.setLevel(Level.ALL));
+        this.getLogger().setLevel(Level.ALL);
+
         this.payNowLib = new PayNowLib(command -> {
             Bukkit.getScheduler().runTask(this, () -> this.getServer()
                     .dispatchCommand(this.getServer().getConsoleSender(), command));
             return true;
-        }, this.getServer().getPort(), this.getServer().getMotd());
-        this.payNowLib.setLogCallback((s, level) -> {
-            this.getLogger().log(level, s);
-        });
+        }, this.getServer().getIp() + ":" + this.getServer().getPort(), this.getServer().getMotd());
+        this.payNowLib.setLogCallback((s, level) -> this.getLogger().log(level, s));
 
         this.payNowLib.loadPayNowConfig(this.getConfigFile());
 

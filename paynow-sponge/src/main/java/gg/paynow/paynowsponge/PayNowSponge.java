@@ -46,7 +46,7 @@ public class PayNowSponge {
 
     @Listener
     public void onServerStart(final StartedEngineEvent<Server> event) {
-        int port = event.game().server().boundAddress().map(InetSocketAddress::getPort).orElse(25565);
+        String ip = event.game().server().boundAddress().map(InetSocketAddress::getHostString).orElse("Unknown");
         String motd = event.game().server().motd().toString();
         this.payNowLib = new PayNowLib(command -> {
             SystemSubject console = Sponge.systemSubject();
@@ -61,7 +61,7 @@ public class PayNowSponge {
                 }
             }).build());
             return true;
-        }, port, motd);
+        }, ip, motd);
 
         this.payNowLib.setLogCallback((s, level) -> {
             if(level == Level.SEVERE) {
