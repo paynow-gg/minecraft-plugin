@@ -22,7 +22,7 @@ import java.util.logging.Level;
 
 public class PayNowLib {
 
-    private static final String VERSION = "0.0.4";
+    private static final String VERSION = "0.0.5";
 
     private static final URI API_QUEUE_URL = URI.create("https://api.paynow.gg/v1/delivery/command-queue/");
     private static final URI API_LINK_URL = URI.create("https://api.paynow.gg/v1/delivery/gameserver/link");
