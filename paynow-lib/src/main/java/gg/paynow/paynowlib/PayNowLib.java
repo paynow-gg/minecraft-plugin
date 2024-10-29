@@ -13,6 +13,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -234,7 +235,7 @@ public class PayNowLib {
                 this.severe("Failed to parse config, using default values");
                 this.config = new PayNowConfig();
             } else {
-                this.config = config;
+                this.config = Objects.requireNonNullElseGet(config, PayNowConfig::new);
             }
         } catch (IOException e) {
             this.severe("Failed to read config file, using default values");
