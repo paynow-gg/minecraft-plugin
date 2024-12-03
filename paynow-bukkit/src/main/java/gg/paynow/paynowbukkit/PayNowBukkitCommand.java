@@ -6,6 +6,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabExecutor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class PayNowBukkitCommand implements TabExecutor {
@@ -43,11 +44,11 @@ public class PayNowBukkitCommand implements TabExecutor {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
+        List<String> list = new ArrayList<>();
         if(args.length == 1) {
-            return List.of("link");
-        } else {
-            return List.of();
+            list.add("link");
         }
+        return list;
     }
 
 }

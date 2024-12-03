@@ -9,6 +9,8 @@ repositories {
 dependencies {
     compileOnly group: 'com.google.code.gson', name: 'gson', version: '2.11.0'
 
+    implementation 'org.apache.httpcomponents:httpclient:4.5.14'
+
     testImplementation platform('org.junit:junit-bom:5.10.2')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation group: 'com.google.code.gson', name: 'gson', version: '2.11.0'
@@ -18,7 +20,7 @@ test {
     useJUnitPlatform()
 }
 
-def targetJavaVersion = 17
+def targetJavaVersion = 8
 tasks.withType(JavaCompile).configureEach {
     // ensure that the encoding is set to UTF-8, no matter what the system default is
     // this fixes some edge cases with special characters not displaying correctly

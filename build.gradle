@@ -3,9 +3,7 @@ tasks.register('buildEverything', GradleBuild) {
             'paynow-lib:build',
             'paynow-bukkit:shadowJar',
             'paynow-bungee:shadowJar',
-            'paynow-velocity:shadowJar',
             'paynow-sponge:shadowJar',
-            'paynow-fabric:build'
     ]
 }
 
@@ -13,7 +11,7 @@ allprojects {
     group = 'gg.paynow'
     version = '0.0.5'
 }
-def targetJavaVersion = 17
+def targetJavaVersion = 8
 
 subprojects {
     tasks.withType(JavaCompile).configureEach {
