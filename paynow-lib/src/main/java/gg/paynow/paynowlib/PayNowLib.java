@@ -280,7 +280,6 @@ public class PayNowLib {
 
         Gson gson = new Gson();
         try(InputStream is = new FileInputStream(configFile)) {
-            is.reset();
             byte[] bytes = new byte[is.available()];
             DataInputStream dataInputStream = new DataInputStream(is);
             dataInputStream.readFully(bytes);
