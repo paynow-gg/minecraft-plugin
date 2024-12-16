@@ -195,9 +195,10 @@ public class PayNowLib {
             return;
         }
 
+        String asdf = this.motd == null ? "" : this.motd.replaceAll("\\n|\\\\|\r|\\t|\\'|\\\"", "-");
         String formattedRequest = String.format(
                 "\n{\n    \"ip\": \"%s\",\n    \"hostname\": \"%s\",\n    \"platform\": \"%s\",\n    \"version\": \"%s\"\n}\n",
-                this.ip, this.motd == null ? "" : this.motd, "Minecraft", VERSION
+                this.ip, asdf, "Minecraft", VERSION
         );
         this.debug("Formatted link request: " + formattedRequest);
 
