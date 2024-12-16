@@ -4,6 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
+import gg.paynow.paynowlib.dto.CommandAttempt;
+import gg.paynow.paynowlib.dto.LinkRequest;
+import gg.paynow.paynowlib.dto.PlayerList;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -104,8 +107,6 @@ public class PayNowLib {
             e.printStackTrace();
             return;
         }
-//        client.sendAsync(request, responseInfo -> HttpResponse.BodySubscribers.ofString(StandardCharsets.UTF_8))
-//                .thenAccept(this::handleResponse);
     }
 
     public int handleResponse(String responseBody) {
@@ -195,12 +196,12 @@ public class PayNowLib {
             return;
         }
 
-        String asdf = this.motd == null ? "" : this.motd.replaceAll("\\n|\\\\|\r|\\t|\\'|\\\"", "-");
-        String formattedRequest = String.format(
-                "\n{\n    \"ip\": \"%s\",\n    \"hostname\": \"%s\",\n    \"platform\": \"%s\",\n    \"version\": \"%s\"\n}\n",
-                this.ip, asdf, "Minecraft", VERSION
-        );
-        this.debug("Formatted link request: " + formattedRequest);
+        Gson gson = new Gson();
+
+        LinkRequest linkRequest = new LinkRequest(this.ip, this.motd == null ? "" : this.motd, "Minecraft", VERSION);
+        String requestJson = gson.toJson(linkRequest);
+
+        this.log(requestJson);
 
         CloseableHttpClient client = HttpClients.createDefault();
         try {
@@ -208,7 +209,7 @@ public class PayNowLib {
             request.setHeader("Content-Type", "application/json");
             request.setHeader("Authorization", "Gameserver " + apiToken);
             request.setHeader("Accept", "application/json");
-            request.setEntity(new StringEntity(formattedRequest));
+            request.setEntity(new StringEntity(requestJson));
 
             ResponseHandler<String> responseHandler = response -> {
                 String body = response.getEntity() == null ? null : EntityUtils.toString(response.getEntity());
@@ -329,42 +330,24 @@ public class PayNowLib {
     }
 
     private String formatPlayers(List<String> names, List<UUID> uuids) {
-        StringBuilder formatted = new StringBuilder();
-        formatted.append("{\"customer_names\":[");
-        for(int i = 0; i < names.size(); i++) {
-            formatted.append("\"").append(names.get(i)).append("\"");
-            if(i < names.size() - 1) {
-                formatted.append(",");
-            }
-        }
-        formatted.append("], \"minecraft_uuids\":[");
-        for(int i = 0; i < uuids.size(); i++) {
-            formatted.append("\"").append(uuids.get(i)).append("\"");
-            if(i < uuids.size() - 1) {
-                formatted.append(",");
-            }
-        }
-        formatted.append("]}");
-        this.debug("Formatted: " + formatted);
-        return formatted.toString();
+        Gson gson = new Gson();
+
+        PlayerList playerList = new PlayerList(names, uuids);
+        String json = gson.toJson(playerList);
+        this.debug(json);
+        return json;
     }
 
     private String formatCommandIds(List<String> commandIds) {
-        StringBuilder formatted = new StringBuilder();
-        formatted.append("[");
-        for(int i = 0; i < commandIds.size(); i++) {
-            formatted.append("{\"attempt_id\": \"");
-            formatted.append(commandIds.get(i));
-            formatted.append("\"}");
-
-            if(i < commandIds.size() - 1) {
-                formatted.append(",");
-            }
+        List<CommandAttempt> attempts = new ArrayList<>();
+        for (String commandId : commandIds) {
+            attempts.add(new CommandAttempt(commandId));
         }
 
-        formatted.append("]");
-
-        return formatted.toString();
+        Gson gson = new Gson();
+        String json = gson.toJson(attempts);
+        this.debug(json);
+        return json;
     }
 
     public void setLogCallback(BiConsumer<String, Level> logCallback) {
