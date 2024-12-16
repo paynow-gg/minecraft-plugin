@@ -4,16 +4,20 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
+import gg.paynow.paynowlib.dto.CommandAttempt;
+import gg.paynow.paynowlib.dto.LinkRequest;
+import gg.paynow.paynowlib.dto.PlayerList;
+import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 
 import java.io.*;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -70,29 +74,47 @@ public class PayNowLib {
             return;
         }
 
-        HttpClient client = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(API_QUEUE_URL)
-                .setHeader("Content-Type", "application/json")
-                .setHeader("Authorization", "Gameserver " + apiToken)
-                .POST(HttpRequest.BodyPublishers.ofString(formatPlayers(names, uuids)))
-                .build();
+        CloseableHttpClient client = HttpClients.createDefault();
+        try {
+            HttpPost request = new HttpPost(API_QUEUE_URL);
+            request.setHeader("Content-Type", "application/json");
+            request.setHeader("Authorization", "Gameserver " + apiToken);
+            request.setHeader("Accept", "application/json");
+            request.setEntity(new StringEntity(formatPlayers(names, uuids)));
 
-        client.sendAsync(request, responseInfo -> HttpResponse.BodySubscribers.ofString(StandardCharsets.UTF_8))
-                .thenAccept(this::handleResponse);
+            ResponseHandler<String> responseHandler = response -> {
+                String body = response.getEntity() == null ? null : EntityUtils.toString(response.getEntity());
+                if(response.getStatusLine().getStatusCode() != 200) {
+                    severe("Failed to fetch commands: " + body);
+                    return null;
+                }
+
+                return body;
+            };
+
+            Thread thread = new Thread(() -> {
+                try {
+                    String responseBody = client.execute(request, responseHandler);
+
+                    handleResponse(responseBody);
+                } catch (IOException e) {
+                    severe("Failed to fetch commands: error executing request");
+                }
+            });
+            thread.start();
+        } catch (UnsupportedEncodingException e) {
+            severe("Error while fetching pending commands.");
+            e.printStackTrace();
+            return;
+        }
     }
 
-    public int handleResponse(HttpResponse<String> response) {
-        if(response.statusCode() != 200) {
-            this.severe("Failed to fetch commands: " + response.body());
-            return 0;
-        }
-
+    public int handleResponse(String responseBody) {
         Gson gson = new Gson();
-        List<QueuedCommand> commands = gson.fromJson(response.body(), new TypeToken<List<QueuedCommand>>(){}.getType());
+        List<QueuedCommand> commands = gson.fromJson(responseBody, new TypeToken<List<QueuedCommand>>(){}.getType());
         if(commands == null) {
             this.severe("Failed to parse commands");
-            this.severe(response.body());
+            this.severe(responseBody);
             return 0;
         }
 
@@ -133,22 +155,36 @@ public class PayNowLib {
             return;
         }
 
-        HttpClient client = HttpClient.newHttpClient();
         String formatted = formatCommandIds(commandsIds);
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(API_QUEUE_URL)
-                .setHeader("Content-Type", "application/json")
-                .setHeader("Authorization", "Gameserver " + apiToken)
-                .method("DELETE", HttpRequest.BodyPublishers.ofString(formatted))
-                .build();
+        CloseableHttpClient client = HttpClients.createDefault();
+        try {
+            HttpDeleteWithBody request = new HttpDeleteWithBody(API_QUEUE_URL);
+            request.setHeader("Content-Type", "application/json");
+            request.setHeader("Authorization", "Gameserver " + apiToken);
+            request.setHeader("Accept", "application/json");
+            request.setEntity(new StringEntity(formatted));
 
-        client.sendAsync(request, responseInfo -> HttpResponse.BodySubscribers.ofString(StandardCharsets.UTF_8))
-                .thenAccept(this::handleAcknowledgeResponse);
-    }
+            ResponseHandler<String> responseHandler = response -> {
+                String body = response.getEntity() == null ? null : EntityUtils.toString(response.getEntity());
+                if(!PayNowUtils.isSuccess(response.getStatusLine().getStatusCode())) {
+                    this.warn("Failed to acknowledge commands: " + body);
+                }
 
-    private void handleAcknowledgeResponse(HttpResponse<String> response) {
-        if(!PayNowUtils.isSuccess(response.statusCode())) {
-            this.warn("Failed to acknowledge commands: " + response.body());
+                return body;
+            };
+
+            Thread thread = new Thread(() -> {
+                try {
+                    client.execute(request, responseHandler);
+                } catch (IOException e) {
+                    severe("Failed to fetch commands: error executing request");
+                }
+            });
+            thread.start();
+        } catch (UnsupportedEncodingException e) {
+            severe("Error while fetching pending commands.");
+            e.printStackTrace();
+            return;
         }
     }
 
@@ -160,34 +196,51 @@ public class PayNowLib {
             return;
         }
 
-        HttpClient client = HttpClient.newHttpClient();
-        String formattedRequest = String.format("""
-                        {
-                            "ip": "%s",
-                            "hostname": "%s",
-                            "platform": "%s",
-                            "version": "%s"
-                        }
-                        """, this.ip, this.motd == null ? "" : this.motd, "Minecraft", VERSION);
-        this.debug("Formatted link request: " + formattedRequest);
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(API_LINK_URL)
-                .setHeader("Content-Type", "application/json")
-                .setHeader("Authorization", "Gameserver " + apiToken)
-                .POST(HttpRequest.BodyPublishers.ofString(formattedRequest))
-                .build();
+        Gson gson = new Gson();
 
-        client.sendAsync(request, responseInfo -> HttpResponse.BodySubscribers.ofString(StandardCharsets.UTF_8)).thenAccept(this::handleLinkResponse);
+        LinkRequest linkRequest = new LinkRequest(this.ip, this.motd == null ? "" : this.motd, "Minecraft", VERSION);
+        String requestJson = gson.toJson(linkRequest);
+
+        this.log(requestJson);
+
+        CloseableHttpClient client = HttpClients.createDefault();
+        try {
+            HttpPost request = new HttpPost(API_LINK_URL);
+            request.setHeader("Content-Type", "application/json");
+            request.setHeader("Authorization", "Gameserver " + apiToken);
+            request.setHeader("Accept", "application/json");
+            request.setEntity(new StringEntity(requestJson));
+
+            ResponseHandler<String> responseHandler = response -> {
+                String body = response.getEntity() == null ? null : EntityUtils.toString(response.getEntity());
+                this.debug("Linked token: " + body);
+                if(!PayNowUtils.isSuccess(response.getStatusLine().getStatusCode())) {
+                    this.warn("Failed to link token: " + body);
+                }
+
+                return body;
+            };
+
+            Thread thread = new Thread(() -> {
+                try {
+                    String responseBody = client.execute(request, responseHandler);
+                    log(responseBody);
+                    handleLinkResponse(responseBody);
+                } catch (IOException e) {
+                    severe("Failed to fetch commands: error executing request");
+                }
+            });
+            thread.start();
+        } catch (UnsupportedEncodingException e) {
+            severe("Error while fetching pending commands.");
+            e.printStackTrace();
+            return;
+        }
     }
 
-    private void handleLinkResponse(HttpResponse<String> response) {
-        this.debug("Linked token: " + response.body());
-        if(!PayNowUtils.isSuccess(response.statusCode())) {
-            this.warn("Failed to link token: " + response.body());
-        }
-
+    private void handleLinkResponse(String responseBody) {
         Gson gson = new Gson();
-        JsonObject responseJson = gson.fromJson(response.body(), JsonObject.class);
+        JsonObject responseJson = gson.fromJson(responseBody, JsonObject.class);
 
         if(responseJson.has("update_available") && responseJson.get("update_available").getAsBoolean()) {
             String latestVersion = responseJson.get("latest_version").getAsString();
@@ -229,13 +282,21 @@ public class PayNowLib {
 
         Gson gson = new Gson();
         try(InputStream is = new FileInputStream(configFile)) {
-            String configJson = new String(is.readAllBytes());
+            byte[] bytes = new byte[is.available()];
+            DataInputStream dataInputStream = new DataInputStream(is);
+            dataInputStream.readFully(bytes);
+
+            String configJson = new String(bytes);
             PayNowConfig config = gson.fromJson(configJson, PayNowConfig.class);
             if(config == null && exists) {
                 this.severe("Failed to parse config, using default values");
                 this.config = new PayNowConfig();
             } else {
-                this.config = Objects.requireNonNullElseGet(config, PayNowConfig::new);
+                if (config == null) {
+                    this.config = new PayNowConfig();
+                } else {
+                    this.config = config;
+                }
             }
         } catch (IOException e) {
             this.severe("Failed to read config file, using default values");
@@ -269,42 +330,24 @@ public class PayNowLib {
     }
 
     private String formatPlayers(List<String> names, List<UUID> uuids) {
-        StringBuilder formatted = new StringBuilder();
-        formatted.append("{\"customer_names\":[");
-        for(int i = 0; i < names.size(); i++) {
-            formatted.append("\"").append(names.get(i)).append("\"");
-            if(i < names.size() - 1) {
-                formatted.append(",");
-            }
-        }
-        formatted.append("], \"minecraft_uuids\":[");
-        for(int i = 0; i < uuids.size(); i++) {
-            formatted.append("\"").append(uuids.get(i)).append("\"");
-            if(i < uuids.size() - 1) {
-                formatted.append(",");
-            }
-        }
-        formatted.append("]}");
-        this.debug("Formatted: " + formatted);
-        return formatted.toString();
+        Gson gson = new Gson();
+
+        PlayerList playerList = new PlayerList(names, uuids);
+        String json = gson.toJson(playerList);
+        this.debug(json);
+        return json;
     }
 
     private String formatCommandIds(List<String> commandIds) {
-        StringBuilder formatted = new StringBuilder();
-        formatted.append("[");
-        for(int i = 0; i < commandIds.size(); i++) {
-            formatted.append("{\"attempt_id\": \"");
-            formatted.append(commandIds.get(i));
-            formatted.append("\"}");
-
-            if(i < commandIds.size() - 1) {
-                formatted.append(",");
-            }
+        List<CommandAttempt> attempts = new ArrayList<>();
+        for (String commandId : commandIds) {
+            attempts.add(new CommandAttempt(commandId));
         }
 
-        formatted.append("]");
-
-        return formatted.toString();
+        Gson gson = new Gson();
+        String json = gson.toJson(attempts);
+        this.debug(json);
+        return json;
     }
 
     public void setLogCallback(BiConsumer<String, Level> logCallback) {

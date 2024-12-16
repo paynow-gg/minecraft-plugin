@@ -27,6 +27,7 @@ public class PayNowBungee extends Plugin {
             ip = listenerInfo.getHost().getHostString();
             motd = listenerInfo.getMotd();
         } catch (Exception e) {
+            e.printStackTrace();
             this.getLogger().severe("Failed to get port and motd from bungeecord config. Please check your bungeecord config.");
             return;
         }
