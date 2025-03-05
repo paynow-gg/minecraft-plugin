@@ -1,6 +1,7 @@
 package gg.paynow.paynowbungee;
 
 import gg.paynow.paynowlib.PayNowLib;
+import gg.paynow.paynowlib.PayNowUtils;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.config.ListenerInfo;
@@ -49,6 +50,7 @@ public class PayNowBungee extends Plugin {
     @Override
     public void onDisable() {
         if(runnableId != -1) ProxyServer.getInstance().getScheduler().cancel(runnableId);
+        PayNowUtils.ASYNC_EXEC.shutdown();
     }
 
     private void startRunnable() {

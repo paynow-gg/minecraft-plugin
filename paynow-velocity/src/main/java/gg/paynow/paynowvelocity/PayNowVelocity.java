@@ -13,6 +13,7 @@ import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.scheduler.ScheduledTask;
 import gg.paynow.paynowlib.PayNowLib;
+import gg.paynow.paynowlib.PayNowUtils;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -78,6 +79,7 @@ public class PayNowVelocity {
     @Subscribe
     public void onProxyShutdown(ProxyShutdownEvent event) {
         if (this.task != null) this.task.cancel();
+        PayNowUtils.ASYNC_EXEC.shutdown();
     }
 
     private void startRunnable() {

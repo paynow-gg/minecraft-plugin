@@ -1,6 +1,7 @@
 package gg.paynow.paynowbukkit;
 
 import gg.paynow.paynowlib.PayNowLib;
+import gg.paynow.paynowlib.PayNowUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -42,6 +43,7 @@ public class PayNowBukkit extends JavaPlugin {
     @Override
     public void onDisable() {
         if(runnableId != -1) this.getServer().getScheduler().cancelTask(runnableId);
+        PayNowUtils.ASYNC_EXEC.shutdown();
     }
 
     private void startRunnable() {

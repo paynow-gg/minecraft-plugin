@@ -2,6 +2,7 @@ package gg.paynow.paynowsponge;
 
 import com.google.inject.Inject;
 import gg.paynow.paynowlib.PayNowLib;
+import gg.paynow.paynowlib.PayNowUtils;
 import org.apache.logging.log4j.Logger;
 import org.spongepowered.api.Server;
 import org.spongepowered.api.Sponge;
@@ -108,6 +109,7 @@ public class PayNowSponge {
     @Listener
     public void onServerStopping(final StoppingEngineEvent<Server> event) {
         if (this.task != null) this.task.cancel();
+        PayNowUtils.ASYNC_EXEC.shutdown();
     }
 
     public void triggerConfigUpdate(){
