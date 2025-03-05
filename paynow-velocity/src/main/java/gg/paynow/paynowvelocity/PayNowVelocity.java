@@ -27,7 +27,7 @@ import java.util.logging.Logger;
 @Plugin(
         id = "paynow-velocity",
         name = "PayNow",
-        version = "0.0.6",
+        version = "0.0.7",
         authors = {"PayNow"},
         url = "https://paynow.gg"
 )
