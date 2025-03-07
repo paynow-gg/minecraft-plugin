@@ -30,8 +30,4 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
-            paynow-bukkit/build/libs/*.jar
-            paynow-bungeecord/build/libs/*.jar
-            paynow-velocity/build/libs/*.jar
-            paynow-fabric/build/libs/*.jar
-            paynow-sponge/build/libs/*.jar
+            builds/**/*.jar
