@@ -1,6 +1,7 @@
 package gg.paynow.paynowfabric;
 
 import gg.paynow.paynowlib.PayNowLib;
+import gg.paynow.paynowlib.PayNowUtils;
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -58,6 +59,8 @@ public class PayNowFabric implements DedicatedServerModInitializer {
             lastCheck = this.payNowLib.getConfig().getApiCheckInterval() * 20;
             this.check();
         });
+
+        ServerLifecycleEvents.SERVER_STOPPING.register((__) -> PayNowUtils.ASYNC_EXEC.shutdown());
     }
 
     private void check() {

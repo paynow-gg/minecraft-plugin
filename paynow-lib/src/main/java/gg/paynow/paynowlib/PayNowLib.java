@@ -26,7 +26,7 @@ import java.util.logging.Level;
 
 public class PayNowLib {
 
-    private static final String VERSION = "0.0.6";
+    private static final String VERSION = "0.0.7";
 
     private static final URI API_QUEUE_URL = URI.create("https://api.paynow.gg/v1/delivery/command-queue/");
     private static final URI API_LINK_URL = URI.create("https://api.paynow.gg/v1/delivery/gameserver/link");
@@ -92,7 +92,7 @@ public class PayNowLib {
                 return body;
             };
 
-            Thread thread = new Thread(() -> {
+            PayNowUtils.ASYNC_EXEC.submit(() -> {
                 try {
                     String responseBody = client.execute(request, responseHandler);
 
@@ -101,7 +101,6 @@ public class PayNowLib {
                     severe("Failed to fetch commands: error executing request");
                 }
             });
-            thread.start();
         } catch (UnsupportedEncodingException e) {
             severe("Error while fetching pending commands.");
             e.printStackTrace();
@@ -173,14 +172,13 @@ public class PayNowLib {
                 return body;
             };
 
-            Thread thread = new Thread(() -> {
+            PayNowUtils.ASYNC_EXEC.submit(() -> {
                 try {
                     client.execute(request, responseHandler);
                 } catch (IOException e) {
                     severe("Failed to fetch commands: error executing request");
                 }
             });
-            thread.start();
         } catch (UnsupportedEncodingException e) {
             severe("Error while fetching pending commands.");
             e.printStackTrace();
@@ -221,7 +219,7 @@ public class PayNowLib {
                 return body;
             };
 
-            Thread thread = new Thread(() -> {
+            PayNowUtils.ASYNC_EXEC.submit(() -> {
                 try {
                     String responseBody = client.execute(request, responseHandler);
                     log(responseBody);
@@ -230,11 +228,9 @@ public class PayNowLib {
                     severe("Failed to fetch commands: error executing request");
                 }
             });
-            thread.start();
         } catch (UnsupportedEncodingException e) {
             severe("Error while fetching pending commands.");
             e.printStackTrace();
-            return;
         }
     }
 

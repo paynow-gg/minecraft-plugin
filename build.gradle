@@ -11,5 +11,5 @@ tasks.register('buildEverything', GradleBuild) {
 
 allprojects {
     group = 'gg.paynow'
-    version = '0.0.6'
+    version = '0.0.7'
 }
