@@ -23,7 +23,7 @@ jobs:
           gradle-version: 8.6
 
       - name: Execute Gradle build
-        run: ./gradlew buildEverything
+        run: ./gradlew build
 
       - name: Release
         uses: softprops/action-gh-release@v2
