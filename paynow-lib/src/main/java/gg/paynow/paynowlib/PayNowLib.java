@@ -104,7 +104,6 @@ public class PayNowLib {
         } catch (UnsupportedEncodingException e) {
             severe("Error while fetching pending commands.");
             e.printStackTrace();
-            return;
         }
     }
 
@@ -182,7 +181,6 @@ public class PayNowLib {
         } catch (UnsupportedEncodingException e) {
             severe("Error while fetching pending commands.");
             e.printStackTrace();
-            return;
         }
     }
 
@@ -264,7 +262,7 @@ public class PayNowLib {
 
     public void loadPayNowConfig(File configFile) {
         boolean exists = true;
-        if(!configFile.exists()) {
+        if (!configFile.exists()) {
             configFile.getParentFile().mkdirs();
             try {
                 configFile.createNewFile();
@@ -307,7 +305,7 @@ public class PayNowLib {
     }
 
     public void savePayNowConfig(File configFile) {
-        if(!configFile.exists()) {
+        if (!configFile.exists()) {
             configFile.mkdirs();
             try {
                 configFile.createNewFile();

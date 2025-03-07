@@ -13,7 +13,7 @@ public class PayNowFabricCommand {
 
     public static LiteralArgumentBuilder<ServerCommandSource> generateCommand(PayNowFabric mod) {
         return literal("paynow")
-                .requires(source -> source.hasPermissionLevel(2))
+                .requires(source -> source.hasPermissionLevel(4))
                 .then(literal("link")
                         .then(argument("token", string())
                                 .executes(context -> {
@@ -24,5 +24,4 @@ public class PayNowFabricCommand {
                                     return 1;
                                 })));
     }
-
 }

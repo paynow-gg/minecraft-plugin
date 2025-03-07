@@ -1,4 +1,4 @@
 name: paynow
-version: 0.0.7
+version: ${version}
 author: PayNow
 main: gg.paynow.paynowbungee.PayNowBungee

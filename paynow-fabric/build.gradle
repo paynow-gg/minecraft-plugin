@@ -1,6 +1,7 @@
 plugins {
     id 'fabric-loom' version '1.6.9'
     id 'maven-publish'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
 repositories {
@@ -20,8 +21,7 @@ dependencies {
     // Fabric API. This is technically optional, but you probably want it anyway.
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-    implementation project(":paynow-lib")
-    include project(":paynow-lib")
+    shadow(implementation project(":paynow-lib"))
 }
 
 processResources {
@@ -37,7 +37,7 @@ processResources {
     }
 }
 
-def targetJavaVersion = 17
+def targetJavaVersion = 21
 tasks.withType(JavaCompile).configureEach {
     // ensure that the encoding is set to UTF-8, no matter what the system default is
     // this fixes some edge cases with special characters not displaying correctly
@@ -66,6 +66,11 @@ jar {
     }
 }
 
+shadowJar {
+    configurations = [project.configurations.shadow]
+    archiveClassifier.set('do-not-release')
+}
+
 // configure the maven publication
 publishing {
     publications {
@@ -86,3 +91,8 @@ publishing {
 
 tasks.register('wrapper') {}
 tasks.register("prepareKotlinBuildScriptModel") {}
+
+remapJar {
+    dependsOn(shadowJar)
+    inputFile = tasks.shadowJar.archiveFile
+}

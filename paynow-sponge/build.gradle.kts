@@ -23,6 +23,7 @@ sponge {
         displayName("PayNow")
         entrypoint("gg.paynow.paynowsponge.PayNowSponge")
         description("Official plugin for the PayNow.gg store integration.")
+        version("${project.version}")
         links {
             //homepageLink("https://spongepowered.org")
             //sourceLink("https://spongepowered.org/source")
@@ -36,7 +37,7 @@ sponge {
 }
 
 dependencies {
-    implementation(project(":paynow-lib"))
+    shadow(implementation(project(":paynow-lib"))!!)
 }
 
 val javaTarget = 17 // Sponge targets a minimum of Java 17
@@ -75,4 +76,8 @@ tasks.register("ideaSyncTask") {}
 
 tasks.withType(ShadowJar::class).configureEach {
     archiveClassifier.set("")
+}
+
+tasks.named("jar") {
+    finalizedBy("shadowJar")
 }

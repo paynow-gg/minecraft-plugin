@@ -1,15 +1,25 @@
-tasks.register('buildEverything', GradleBuild) {
-    tasks = [
-            'paynow-lib:build',
-            'paynow-bukkit:shadowJar',
-            'paynow-bungee:shadowJar',
-            'paynow-velocity:shadowJar',
-            'paynow-sponge:shadowJar',
-            'paynow-fabric:build'
-    ]
-}
-
 allprojects {
     group = 'gg.paynow'
     version = '0.0.7'
+
+    afterEvaluate { project ->
+        if (project.tasks.findByName('build')) {
+            tasks.named('build') {
+                if (project.name == "paynow-lib") {
+                    finalizedBy 'clean'
+                    return
+                }
+                finalizedBy 'copyToBuilds'
+            }
+        }
+    }
+
+    tasks.register('copyToBuilds') {
+        doLast {
+            copy {
+                from "/build/libs/${project.name}-${version}.jar"
+                into "${rootDir}/builds"
+            }
+        }.finalizedBy(clean)
+    }
 }
