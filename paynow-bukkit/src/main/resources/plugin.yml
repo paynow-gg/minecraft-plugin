@@ -1,6 +1,6 @@
 name: PayNow
 author: PayNow
-version: 0.0.7
+version: ${version}
 main: gg.paynow.paynowbukkit.PayNowBukkit
 
 commands:
