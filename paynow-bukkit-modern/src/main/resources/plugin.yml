@@ -1,0 +1,12 @@
+name: PayNow
+author: PayNow
+version: ${version}
+main: gg.paynow.paynowbukkit.PayNowBukkit
+api-version: "1.13"
+
+commands:
+  paynow:
+    description: PayNow command
+    usage: /paynow
+    permission: paynow.admin
+    aliases: [pn]
