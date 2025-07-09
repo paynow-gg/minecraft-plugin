@@ -10,7 +10,8 @@ pluginManagement {
 
 rootProject.name = 'paynow-minecraft'
 include 'paynow-lib'
-include 'paynow-bukkit'
+include 'paynow-bukkit-legacy'
+include 'paynow-bukkit-modern'
 include 'paynow-bungeecord'
 include 'paynow-sponge'
 include 'paynow-velocity'

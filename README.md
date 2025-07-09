@@ -40,7 +40,8 @@ To download the plugins please visit our release page: [Download](https://github
 ## Modules
 
 You can find all our modules if you wish to modify them yourself below.
-- [paynow-bukkit](./paynow-bukkit)
+- [paynow-bukkit-legacy](./paynow-bukkit-legacy)
+- [paynow-bukkit-modern](./paynow-bukkit-modern)
 - [paynow-bungeecord](./paynow-bungeecord)
 - [paynow-lib](./paynow-lib)
 - [paynow-sponge](./paynow-sponge)
