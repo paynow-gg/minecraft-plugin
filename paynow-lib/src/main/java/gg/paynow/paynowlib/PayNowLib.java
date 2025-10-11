@@ -9,7 +9,7 @@ import gg.paynow.paynowlib.dto.LinkRequest;
 import gg.paynow.paynowlib.dto.PlayerList;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
+import org.apache.http.entity.StringEntity; 
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
@@ -26,7 +26,7 @@ import java.util.logging.Level;
 
 public class PayNowLib {
 
-    private static final String VERSION = "0.0.7";
+    private static final String VERSION = "0.0.8";
 
     private static final URI API_QUEUE_URL = URI.create("https://api.paynow.gg/v1/delivery/command-queue/");
     private static final URI API_LINK_URL = URI.create("https://api.paynow.gg/v1/delivery/gameserver/link");
@@ -129,7 +129,6 @@ public class PayNowLib {
             boolean success = this.executeCommandCallback.apply(command.getCommand());
             if(success) {
                 this.successfulCommands.add(command.getAttemptId());
-                this.executedCommands.add(command.getAttemptId());
             } else {
                 this.warn("Failed to execute command: " + command.getCommand());
             }
@@ -164,7 +163,11 @@ public class PayNowLib {
 
             ResponseHandler<String> responseHandler = response -> {
                 String body = response.getEntity() == null ? null : EntityUtils.toString(response.getEntity());
-                if(!PayNowUtils.isSuccess(response.getStatusLine().getStatusCode())) {
+                if(PayNowUtils.isSuccess(response.getStatusLine().getStatusCode())) {
+                    for (String commandId : commandsIds) {
+                        this.executedCommands.add(commandId);
+                    }
+                } else {
                     this.warn("Failed to acknowledge commands: " + body);
                 }
 
