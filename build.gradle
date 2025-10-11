@@ -1,6 +1,6 @@
 allprojects {
     group = 'gg.paynow'
-    version = '0.0.8'
+    version = '0.0.7'
 
     afterEvaluate { project ->
         if (project.tasks.findByName('build')) {
