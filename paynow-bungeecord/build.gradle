@@ -5,10 +5,23 @@ plugins {
 
 repositories {
     mavenCentral()
+    
+    maven {
+        url = 'https://repo.papermc.io/repository/maven-public/'
+    }
+    
+    maven {
+        url = 'https://libraries.minecraft.net/'
+    }
+    
+    maven {
+        url = 'https://maven.elmakers.com/repository/'
+    }
 }
 
 dependencies {
     compileOnly 'net.md-5:bungeecord-api:1.16-R0.4'
+    compileOnly 'net.md-5:brigadier:1.0.16-SNAPSHOT'
     shadow(implementation project(":paynow-lib"))
 }
 
