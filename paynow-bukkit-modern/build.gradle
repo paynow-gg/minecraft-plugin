@@ -8,19 +8,17 @@ repositories {
 
     maven {
         url = 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/'
-
-        // As of Gradle 5.1, you can limit this to only those
-        // dependencies you expect from it
-        content {
-            includeGroup 'org.bukkit'
-            includeGroup 'org.spigotmc'
-        }
+    }
+    
+    maven {
+        url = 'https://repo.papermc.io/repository/maven-public/'
     }
 
 }
 
 dependencies {
     compileOnly 'org.spigotmc:spigot-api:1.13-R0.1-SNAPSHOT'
+    compileOnly 'net.md-5:bungeecord-chat:1.13-SNAPSHOT'
     shadow(implementation project(":paynow-lib"))
     implementation group: 'com.google.code.gson', name: 'gson', version: '2.11.0'
 }
