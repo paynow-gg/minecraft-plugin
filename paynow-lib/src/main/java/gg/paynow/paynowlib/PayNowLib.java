@@ -26,7 +26,7 @@ import java.util.logging.Level;
 
 public class PayNowLib {
 
-    private static final String VERSION = "0.0.7";
+    private static final String VERSION = "0.0.8";
 
     private static final URI API_QUEUE_URL = URI.create("https://api.paynow.gg/v1/delivery/command-queue/");
     private static final URI API_LINK_URL = URI.create("https://api.paynow.gg/v1/delivery/gameserver/link");
@@ -129,7 +129,6 @@ public class PayNowLib {
             boolean success = this.executeCommandCallback.apply(command.getCommand());
             if(success) {
                 this.successfulCommands.add(command.getAttemptId());
-                this.executedCommands.add(command.getAttemptId());
             } else {
                 this.warn("Failed to execute command: " + command.getCommand());
             }
@@ -166,6 +165,10 @@ public class PayNowLib {
                 String body = response.getEntity() == null ? null : EntityUtils.toString(response.getEntity());
                 if(!PayNowUtils.isSuccess(response.getStatusLine().getStatusCode())) {
                     this.warn("Failed to acknowledge commands: " + body);
+                } else {
+                    for (String commandId : commandsIds) {
+                        this.executedCommands.add(commandId);
+                    }
                 }
 
                 return body;
