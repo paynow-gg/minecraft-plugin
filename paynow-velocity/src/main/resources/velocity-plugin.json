@@ -1,0 +1,9 @@
+{
+  "id":"paynow-velocity",
+  "name":"PayNow",
+  "version":"${version}",
+  "url":"https://paynow.gg",
+  "authors":["PayNow"],
+  "dependencies":[],
+  "main":"gg.paynow.paynowvelocity.PayNowVelocity"
+}

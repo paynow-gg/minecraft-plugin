@@ -18,6 +18,15 @@ dependencies {
     shadow(implementation project(":paynow-lib"))
 }
 
+processResources {
+    inputs.property "version", project.version
+    filteringCharset "UTF-8"
+
+    filesMatching("velocity-plugin.json") {
+        expand "version": project.version
+    }
+}
+
 shadowJar {
     archiveClassifier.set('')
 }
