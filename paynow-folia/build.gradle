@@ -1,0 +1,39 @@
+plugins {
+    id "java"
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+group = "gg.paynow"
+
+repositories {
+    mavenCentral()
+
+    maven {
+        url = 'https://repo.papermc.io/repository/maven-public/'
+    }
+}
+
+dependencies {
+    compileOnly 'dev.folia:folia-api:1.20.1-R0.1-SNAPSHOT'
+    implementation group: 'com.google.code.gson', name: 'gson', version: '2.11.0'
+    shadow(implementation project(":paynow-lib"))
+}
+
+shadowJar {
+    configurations = [project.configurations.shadow]
+    archiveClassifier.set('')
+}
+
+processResources {
+    inputs.property "version", project.version
+
+    filesMatching("plugin.yml") {
+        expand "version": project.version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = "UTF-8"
+}
+
+jar.finalizedBy('shadowJar')

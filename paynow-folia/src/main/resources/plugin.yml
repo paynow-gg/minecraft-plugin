@@ -1,0 +1,13 @@
+name: PayNow
+author: PayNow
+version: ${version}
+main: gg.paynow.paynowfolia.PayNowFolia
+api-version: "1.13"
+folia-supported: true
+
+commands:
+  paynow:
+    description: PayNow command
+    usage: /paynow
+    permission: paynow.admin
+    aliases: [pn]
