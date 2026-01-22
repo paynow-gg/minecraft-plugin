@@ -17,7 +17,7 @@ allprojects {
     tasks.register('copyToBuilds') {
         doLast {
             copy {
-                from "${project.getLayout().getBuildDirectory()}/libs/${project.name}-${version}.jar"
+                from "${project.layout.buildDirectory.get().asFile}/libs/${project.name}-${version}.jar"
                 into "${rootDir}/builds"
             }
         }.finalizedBy(clean)
