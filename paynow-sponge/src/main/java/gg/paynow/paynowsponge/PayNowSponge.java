@@ -31,6 +31,8 @@ import java.util.logging.Level;
 @Plugin("paynow-sponge")
 public class PayNowSponge {
 
+    private static PayNowSponge instance;
+
     private final PluginContainer container;
 
     @Inject
@@ -39,6 +41,7 @@ public class PayNowSponge {
     private PayNowLib payNowLib;
 
     private ScheduledTask task = null;
+    private ScheduledTask reportEventsTask = null;
 
     @Inject
     PayNowSponge(final PluginContainer container) {
@@ -47,6 +50,7 @@ public class PayNowSponge {
 
     @Listener
     public void onServerStart(final StartedEngineEvent<Server> event) {
+        instance = this;
         String ip = event.game().server().boundAddress().map(InetSocketAddress::getHostString).orElse("Unknown");
         String motd = event.game().server().motd().toString();
         this.payNowLib = new PayNowLib(command -> {
@@ -78,13 +82,13 @@ public class PayNowSponge {
 
         this.payNowLib.onUpdateConfig(config -> this.startRunnable());
 
+        Sponge.eventManager().registerListeners(this.container, new PlayerJoinListener());
+
         this.startRunnable();
     }
 
     private void startRunnable() {
-        if (this.task != null) {
-            this.task.cancel();
-        }
+        this.stopRunnable();
 
         this.task = Sponge.server().scheduler().submit(Task.builder()
                 .plugin(container)
@@ -99,6 +103,12 @@ public class PayNowSponge {
                             this.payNowLib.fetchPendingCommands(onlinePlayersName, onlinePlayersUUID);
                         })
                 .build());
+
+        this.reportEventsTask = Sponge.server().scheduler().submit(Task.builder()
+                .plugin(container)
+                .interval(this.payNowLib.getConfig().getEventsQueueReportInterval(), TimeUnit.SECONDS)
+                        .execute(() -> this.payNowLib.reportEvents())
+                .build());
     }
 
     @Listener
@@ -108,8 +118,17 @@ public class PayNowSponge {
 
     @Listener
     public void onServerStopping(final StoppingEngineEvent<Server> event) {
-        if (this.task != null) this.task.cancel();
+        this.stopRunnable();
         PayNowUtils.ASYNC_EXEC.shutdown();
+    }
+
+    private void stopRunnable() {
+        if (this.task != null) {
+            this.task.cancel();
+        }
+        if (this.reportEventsTask != null) {
+            this.reportEventsTask.cancel();
+        }
     }
 
     public void triggerConfigUpdate(){
@@ -123,5 +142,9 @@ public class PayNowSponge {
 
     public PayNowLib getPayNowLib() {
         return payNowLib;
+    }
+
+    public static PayNowSponge getInstance() {
+        return instance;
     }
 }

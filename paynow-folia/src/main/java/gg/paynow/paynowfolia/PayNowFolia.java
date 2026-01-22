@@ -18,12 +18,17 @@ import java.util.logging.Level;
 
 public class PayNowFolia extends JavaPlugin {
 
+    private static PayNowFolia instance;
+
     private PayNowLib payNowLib;
 
-    private ScheduledTask runnableTask = null;
+    private ScheduledTask apiCheckRunnableTask = null;
+    private ScheduledTask reportEventsRunnableTask = null;
 
     @Override
     public void onEnable() {
+        instance = this;
+
         Arrays.stream(this.getLogger().getHandlers()).forEach(handler -> handler.setLevel(Level.ALL));
         this.getLogger().setLevel(Level.ALL);
 
@@ -38,24 +43,24 @@ public class PayNowFolia extends JavaPlugin {
 
         new PayNowFoliaCommand(this);
 
-        this.payNowLib.onUpdateConfig(config -> this.startRunnable());
+        this.getServer().getPluginManager().registerEvents(new PlayerJoinListener(), this);
 
-        this.startRunnable();
+        this.payNowLib.onUpdateConfig(config -> this.startRunnables());
+
+        this.startRunnables();
     }
 
     @Override
     public void onDisable() {
-        if(this.runnableTask != null) this.runnableTask.cancel();
+        this.cancelTasks();
         PayNowUtils.ASYNC_EXEC.shutdown();
     }
 
-    private void startRunnable() {
+    private void startRunnables() {
         GlobalRegionScheduler scheduler = this.getServer().getGlobalRegionScheduler();
-        if(this.runnableTask != null) {
-            this.runnableTask.cancel();
-        }
+        this.cancelTasks();
 
-        this.runnableTask = scheduler.runAtFixedRate(this, (task) -> {
+        this.apiCheckRunnableTask = scheduler.runAtFixedRate(this, (task) -> {
             List<String> onlinePlayersNames = new ArrayList<>();
             List<UUID> onlinePlayersUUIDs = new ArrayList<>();
             for(Player player : this.getServer().getOnlinePlayers()) {
@@ -64,6 +69,14 @@ public class PayNowFolia extends JavaPlugin {
             }
             payNowLib.fetchPendingCommands(onlinePlayersNames, onlinePlayersUUIDs);
         }, 1, this.payNowLib.getConfig().getApiCheckInterval() * 20L);
+
+        this.reportEventsRunnableTask = scheduler.runAtFixedRate(this, task -> this.payNowLib.reportEvents(),
+                1, this.payNowLib.getConfig().getEventsQueueReportInterval() * 20L);
+    }
+
+    private void cancelTasks() {
+        if(this.apiCheckRunnableTask != null) this.apiCheckRunnableTask.cancel();
+        if(this.reportEventsRunnableTask != null) this.reportEventsRunnableTask.cancel();
     }
 
     private File getConfigFile() {
@@ -77,5 +90,9 @@ public class PayNowFolia extends JavaPlugin {
 
     public PayNowLib getPayNowLib() {
         return payNowLib;
+    }
+
+    public static PayNowFolia getInstance() {
+        return instance;
     }
 }

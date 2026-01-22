@@ -25,6 +25,8 @@ import java.util.logging.Logger;
 
 public class PayNowVelocity {
 
+    private static PayNowVelocity instance;
+
     @Inject
     private Logger logger;
     @Inject
@@ -34,6 +36,7 @@ public class PayNowVelocity {
     private PayNowLib payNowLib;
 
     private ScheduledTask task = null;
+    private ScheduledTask reportEventsTask = null;
 
     @Inject
     public PayNowVelocity(@DataDirectory Path dataDirectory) {
@@ -42,6 +45,7 @@ public class PayNowVelocity {
 
     @Subscribe
     public void onProxyInitialization(ProxyInitializeEvent event) {
+        instance = this;
         String ip = this.server.getBoundAddress().getHostString();
         String motd = this.server.getConfiguration().getMotd().toString();
         this.payNowLib = new PayNowLib(command -> {
@@ -65,19 +69,19 @@ public class PayNowVelocity {
                 .build();
         this.server.getCommandManager().register(commandMeta, PayNowVelocityCommand.generateCommand(this));
 
+        this.server.getEventManager().register(this, new PlayerJoinListener());
+
         this.startRunnable();
     }
 
     @Subscribe
     public void onProxyShutdown(ProxyShutdownEvent event) {
-        if (this.task != null) this.task.cancel();
+        this.stopRunnable();
         PayNowUtils.ASYNC_EXEC.shutdown();
     }
 
     private void startRunnable() {
-        if (this.task != null) {
-            this.task.cancel();
-        }
+        this.stopRunnable();
 
         this.task = this.server.getScheduler().buildTask(this, () -> {
             List<String> onlinePlayersName = new ArrayList<>();
@@ -88,6 +92,18 @@ public class PayNowVelocity {
             }
             this.payNowLib.fetchPendingCommands(onlinePlayersName, onlinePlayersUUID);
         }).repeat(this.payNowLib.getConfig().getApiCheckInterval(), TimeUnit.SECONDS).schedule();
+
+        this.reportEventsTask = this.server.getScheduler().buildTask(this,
+            () -> this.payNowLib.reportEvents()).repeat(this.payNowLib.getConfig().getEventsQueueReportInterval(), TimeUnit.SECONDS).schedule();
+    }
+
+    private void stopRunnable() {
+        if (this.task != null) {
+            this.task.cancel();
+        }
+        if (this.reportEventsTask != null) {
+            this.reportEventsTask.cancel();
+        }
     }
 
     public void triggerConfigUpdate(){
@@ -101,5 +117,9 @@ public class PayNowVelocity {
 
     public PayNowLib getPayNowLib() {
         return payNowLib;
+    }
+
+    public static PayNowVelocity getInstance() {
+        return instance;
     }
 }

@@ -15,12 +15,16 @@ import java.util.logging.Level;
 
 public class PayNowBukkit extends JavaPlugin {
 
+    private static PayNowBukkit instance;
+
     private PayNowLib payNowLib;
 
     private int runnableId = -1;
+    private int reportEventsRunnableId = -1;
 
     @Override
     public void onEnable() {
+        instance = this;
         Arrays.stream(this.getLogger().getHandlers()).forEach(handler -> handler.setLevel(Level.ALL));
         this.getLogger().setLevel(Level.ALL);
 
@@ -35,6 +39,8 @@ public class PayNowBukkit extends JavaPlugin {
 
         new PayNowBukkitCommand(this);
 
+        this.getServer().getPluginManager().registerEvents(new PlayerJoinListener(), this);
+
         this.payNowLib.onUpdateConfig(config -> this.startRunnable());
 
         this.startRunnable();
@@ -42,14 +48,12 @@ public class PayNowBukkit extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        if(runnableId != -1) this.getServer().getScheduler().cancelTask(runnableId);
+        this.stopRunnable();
         PayNowUtils.ASYNC_EXEC.shutdown();
     }
 
     private void startRunnable() {
-        if(runnableId != -1) {
-            this.getServer().getScheduler().cancelTask(runnableId);
-        }
+        this.stopRunnable();
 
         this.runnableId = this.getServer().getScheduler().scheduleSyncRepeatingTask(this, () -> {
             List<String> onlinePlayersNames = new ArrayList<>();
@@ -60,6 +64,14 @@ public class PayNowBukkit extends JavaPlugin {
             }
             payNowLib.fetchPendingCommands(onlinePlayersNames, onlinePlayersUUIDs);
         }, 0, this.payNowLib.getConfig().getApiCheckInterval() * 20L);
+
+        this.reportEventsRunnableId = this.getServer().getScheduler().scheduleSyncRepeatingTask(this,
+            () -> payNowLib.reportEvents(), 0, this.payNowLib.getConfig().getEventsQueueReportInterval() * 20L);
+    }
+
+    private void stopRunnable() {
+        if(runnableId != -1) this.getServer().getScheduler().cancelTask(runnableId);
+        if(reportEventsRunnableId != -1) this.getServer().getScheduler().cancelTask(reportEventsRunnableId);
     }
 
     private File getConfigFile() {
@@ -73,5 +85,9 @@ public class PayNowBukkit extends JavaPlugin {
 
     public PayNowLib getPayNowLib() {
         return payNowLib;
+    }
+
+    public static PayNowBukkit getInstance() {
+        return instance;
     }
 }

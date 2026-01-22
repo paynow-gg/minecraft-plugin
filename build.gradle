@@ -1,6 +1,6 @@
 allprojects {
     group = 'gg.paynow'
-    version = '0.0.8'
+    version = '0.0.9'
 
     afterEvaluate { project ->
         if (project.tasks.findByName('build')) {
@@ -17,7 +17,7 @@ allprojects {
     tasks.register('copyToBuilds') {
         doLast {
             copy {
-                from "${project.buildDir}/libs/${project.name}-${version}.jar"
+                from "${project.getLayout().getBuildDirectory()}/libs/${project.name}-${version}.jar"
                 into "${rootDir}/builds"
             }
         }.finalizedBy(clean)

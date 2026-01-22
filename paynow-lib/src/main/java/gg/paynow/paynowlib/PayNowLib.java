@@ -7,6 +7,8 @@ import com.google.gson.reflect.TypeToken;
 import gg.paynow.paynowlib.dto.CommandAttempt;
 import gg.paynow.paynowlib.dto.LinkRequest;
 import gg.paynow.paynowlib.dto.PlayerList;
+import gg.paynow.paynowlib.events.PayNowEvent;
+import org.apache.http.HttpResponse;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -15,10 +17,14 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
 import java.io.*;
+import java.io.*;
 import java.net.URI;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -26,13 +32,16 @@ import java.util.logging.Level;
 
 public class PayNowLib {
 
-    private static final String VERSION = "0.0.8";
+    private static final String VERSION = "0.0.9";
 
     private static final URI API_QUEUE_URL = URI.create("https://api.paynow.gg/v1/delivery/command-queue/");
     private static final URI API_LINK_URL = URI.create("https://api.paynow.gg/v1/delivery/gameserver/link");
+    private static final URI API_EVENTS_URL = URI.create("https://api.paynow.gg/v1/delivery/events");
 
     private final CommandHistory executedCommands;
     private final List<String> successfulCommands;
+
+    private final ConcurrentLinkedQueue<PayNowEvent> eventQueue;
 
     private final Function<String, Boolean> executeCommandCallback;
 
@@ -49,6 +58,7 @@ public class PayNowLib {
         this.executeCommandCallback = executeCommandCallback;
         this.executedCommands = new CommandHistory(25);
         this.successfulCommands = new ArrayList<>();
+        this.eventQueue = new ConcurrentLinkedQueue<>();
 
         this.ip = ip;
         this.motd = motd;
@@ -74,37 +84,33 @@ public class PayNowLib {
             return;
         }
 
-        CloseableHttpClient client = HttpClients.createDefault();
-        try {
-            HttpPost request = new HttpPost(API_QUEUE_URL);
-            request.setHeader("Content-Type", "application/json");
-            request.setHeader("Authorization", "Gameserver " + apiToken);
-            request.setHeader("Accept", "application/json");
-            request.setEntity(new StringEntity(formatPlayers(names, uuids)));
+        String formattedPlayers = formatPlayers(names, uuids);
 
-            ResponseHandler<String> responseHandler = response -> {
-                String body = response.getEntity() == null ? null : EntityUtils.toString(response.getEntity());
-                if(response.getStatusLine().getStatusCode() != 200) {
-                    severe("Failed to fetch commands: " + body);
-                    return null;
-                }
+        PayNowUtils.ASYNC_EXEC.submit(() -> {
+            try (CloseableHttpClient client = HttpClients.createDefault()) {
+                HttpPost request = new HttpPost(API_QUEUE_URL);
+                request.setHeader("Content-Type", "application/json");
+                request.setHeader("Authorization", "Gameserver " + apiToken);
+                request.setHeader("Accept", "application/json");
+                request.setEntity(new StringEntity(formattedPlayers));
 
-                return body;
-            };
+                ResponseHandler<String> responseHandler = response -> {
+                    String body = response.getEntity() == null ? null : EntityUtils.toString(response.getEntity());
+                    if(response.getStatusLine().getStatusCode() != 200) {
+                        severe("Failed to fetch commands: " + body);
+                        return null;
+                    }
 
-            PayNowUtils.ASYNC_EXEC.submit(() -> {
-                try {
-                    String responseBody = client.execute(request, responseHandler);
+                    return body;
+                };
 
-                    handleResponse(responseBody);
-                } catch (IOException e) {
-                    severe("Failed to fetch commands: error executing request");
-                }
-            });
-        } catch (UnsupportedEncodingException e) {
-            severe("Error while fetching pending commands.");
-            e.printStackTrace();
-        }
+                String responseBody = client.execute(request, responseHandler);
+
+                handleResponse(responseBody);
+            } catch (IOException e) {
+                severe("Failed to fetch commands: error executing request");
+            }
+        });
     }
 
     public int handleResponse(String responseBody) {
@@ -153,38 +159,33 @@ public class PayNowLib {
         }
 
         String formatted = formatCommandIds(commandsIds);
-        CloseableHttpClient client = HttpClients.createDefault();
-        try {
-            HttpDeleteWithBody request = new HttpDeleteWithBody(API_QUEUE_URL);
-            request.setHeader("Content-Type", "application/json");
-            request.setHeader("Authorization", "Gameserver " + apiToken);
-            request.setHeader("Accept", "application/json");
-            request.setEntity(new StringEntity(formatted));
 
-            ResponseHandler<String> responseHandler = response -> {
-                String body = response.getEntity() == null ? null : EntityUtils.toString(response.getEntity());
-                if(!PayNowUtils.isSuccess(response.getStatusLine().getStatusCode())) {
-                    this.warn("Failed to acknowledge commands: " + body);
-                } else {
-                    for (String commandId : commandsIds) {
-                        this.executedCommands.add(commandId);
+        PayNowUtils.ASYNC_EXEC.submit(() -> {
+            try (CloseableHttpClient client = HttpClients.createDefault()) {
+                HttpDeleteWithBody request = new HttpDeleteWithBody(API_QUEUE_URL);
+                request.setHeader("Content-Type", "application/json");
+                request.setHeader("Authorization", "Gameserver " + apiToken);
+                request.setHeader("Accept", "application/json");
+                request.setEntity(new StringEntity(formatted));
+
+                ResponseHandler<String> responseHandler = response -> {
+                    String body = response.getEntity() == null ? null : EntityUtils.toString(response.getEntity());
+                    if(!PayNowUtils.isSuccess(response.getStatusLine().getStatusCode())) {
+                        this.warn("Failed to acknowledge commands: " + body);
+                    } else {
+                        for (String commandId : commandsIds) {
+                            this.executedCommands.add(commandId);
+                        }
                     }
-                }
 
-                return body;
-            };
+                    return body;
+                };
 
-            PayNowUtils.ASYNC_EXEC.submit(() -> {
-                try {
-                    client.execute(request, responseHandler);
-                } catch (IOException e) {
-                    severe("Failed to fetch commands: error executing request");
-                }
-            });
-        } catch (UnsupportedEncodingException e) {
-            severe("Error while fetching pending commands.");
-            e.printStackTrace();
-        }
+                client.execute(request, responseHandler);
+            } catch (IOException e) {
+                severe("Failed to acknowledge commands: error executing request");
+            }
+        });
     }
 
     private void linkToken() {
@@ -202,37 +203,31 @@ public class PayNowLib {
 
         this.log(requestJson);
 
-        CloseableHttpClient client = HttpClients.createDefault();
-        try {
-            HttpPost request = new HttpPost(API_LINK_URL);
-            request.setHeader("Content-Type", "application/json");
-            request.setHeader("Authorization", "Gameserver " + apiToken);
-            request.setHeader("Accept", "application/json");
-            request.setEntity(new StringEntity(requestJson));
+        PayNowUtils.ASYNC_EXEC.submit(() -> {
+            try (CloseableHttpClient client = HttpClients.createDefault()) {
+                HttpPost request = new HttpPost(API_LINK_URL);
+                request.setHeader("Content-Type", "application/json");
+                request.setHeader("Authorization", "Gameserver " + apiToken);
+                request.setHeader("Accept", "application/json");
+                request.setEntity(new StringEntity(requestJson));
 
-            ResponseHandler<String> responseHandler = response -> {
-                String body = response.getEntity() == null ? null : EntityUtils.toString(response.getEntity());
-                this.debug("Linked token: " + body);
-                if(!PayNowUtils.isSuccess(response.getStatusLine().getStatusCode())) {
-                    this.warn("Failed to link token: " + body);
-                }
+                ResponseHandler<String> responseHandler = response -> {
+                    String body = response.getEntity() == null ? null : EntityUtils.toString(response.getEntity());
+                    this.debug("Linked token: " + body);
+                    if(!PayNowUtils.isSuccess(response.getStatusLine().getStatusCode())) {
+                        this.warn("Failed to link token: " + body);
+                    }
 
-                return body;
-            };
+                    return body;
+                };
 
-            PayNowUtils.ASYNC_EXEC.submit(() -> {
-                try {
-                    String responseBody = client.execute(request, responseHandler);
-                    log(responseBody);
-                    handleLinkResponse(responseBody);
-                } catch (IOException e) {
-                    severe("Failed to fetch commands: error executing request");
-                }
-            });
-        } catch (UnsupportedEncodingException e) {
-            severe("Error while fetching pending commands.");
-            e.printStackTrace();
-        }
+                String responseBody = client.execute(request, responseHandler);
+                log(responseBody);
+                handleLinkResponse(responseBody);
+            } catch (IOException e) {
+                severe("Failed to link token: error executing request");
+            }
+        });
     }
 
     private void handleLinkResponse(String responseBody) {
@@ -263,6 +258,62 @@ public class PayNowLib {
         this.log("Successfully connected to PayNow using the token for \"" + gsName + "\" (" + gsId + ")");
     }
 
+    public void registerEvent(PayNowEvent event) {
+        this.eventQueue.add(event);
+    }
+
+    public void reportEvents() {
+        if(this.eventQueue.isEmpty()) return;
+
+        String apiToken = this.config.getApiToken();
+        if(apiToken == null) {
+            this.warn("API Token is not set");
+            return;
+        }
+
+        Gson gson = new GsonBuilder().registerTypeAdapter(PayNowEvent.class, new PayNowEvent.PayNowEventAdapter()).create();
+
+        // Atomically drain all events from the queue
+        List<PayNowEvent> eventsToReport = new ArrayList<>();
+        PayNowEvent event;
+        while ((event = this.eventQueue.poll()) != null) {
+            eventsToReport.add(event);
+        }
+
+        if(eventsToReport.isEmpty()) return;
+
+        String requestJson = gson.toJson(eventsToReport);
+
+        this.debug(requestJson);
+
+        // Execute the HTTP request asynchronously
+        PayNowUtils.ASYNC_EXEC.submit(() -> {
+            try(CloseableHttpClient httpClient = HttpClients.createDefault()) {
+                HttpPost request = new HttpPost(API_EVENTS_URL);
+                request.setHeader("Content-Type", "application/json");
+                request.setHeader("Authorization", "Gameserver " + apiToken);
+                request.setHeader("Accept", "application/json");
+                request.setEntity(new StringEntity(requestJson));
+
+                HttpResponse response = httpClient.execute(request);
+                int statusCode = response.getStatusLine().getStatusCode();
+                if(!PayNowUtils.isSuccess(statusCode)) {
+                    this.warn("Failed to report events: " + statusCode);
+                    // Re-add events to the front of the queue if failed to report
+                    // Using addAll will append them, maintaining order
+                    eventsToReport.forEach(this.eventQueue::offer);
+                }else {
+                    this.debug("Successfully reported " + eventsToReport.size() + " events");
+                }
+            } catch (IOException ex) {
+                severe("Failed to report events: " + ex.getMessage());
+                debug(Arrays.toString(ex.getStackTrace()));
+                // Re-add events to the queue if failed to report
+                eventsToReport.forEach(this.eventQueue::offer);
+            }
+        });
+    }
+
     public void loadPayNowConfig(File configFile) {
         boolean exists = true;
         if (!configFile.exists()) {
@@ -278,7 +329,7 @@ public class PayNowLib {
         }
 
         Gson gson = new Gson();
-        try(InputStream is = new FileInputStream(configFile)) {
+        try(InputStream is = Files.newInputStream(configFile.toPath())) {
             byte[] bytes = new byte[is.available()];
             DataInputStream dataInputStream = new DataInputStream(is);
             dataInputStream.readFully(bytes);
@@ -309,7 +360,7 @@ public class PayNowLib {
 
     public void savePayNowConfig(File configFile) {
         if (!configFile.exists()) {
-            configFile.mkdirs();
+            configFile.getParentFile().mkdirs();
             try {
                 configFile.createNewFile();
             } catch (IOException e) {
@@ -319,7 +370,7 @@ public class PayNowLib {
 
         }
         Gson gson = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
-        try(OutputStream os = new FileOutputStream(configFile)) {
+        try(OutputStream os = Files.newOutputStream(configFile.toPath())) {
             os.write(gson.toJson(this.config).getBytes());
         } catch (IOException e) {
             this.severe("Failed to save config file");

@@ -1,31 +1,35 @@
 package gg.paynow.paynowlib;
 
-import java.util.PriorityQueue;
-import java.util.Queue;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 
 public class CommandHistory {
 
-    private final Queue<String> queue;
+    private final LinkedHashSet<String> history;
     private final int maxSize;
 
     public CommandHistory(int maxSize) {
-        this.queue = new PriorityQueue<>();
+        this.history = new LinkedHashSet<>();
         this.maxSize = maxSize;
     }
 
     public void add(String attemptId) {
-        if (queue.size() == maxSize) {
-            queue.poll();
+        if (history.size() >= maxSize) {
+            Iterator<String> iterator = history.iterator();
+            if (iterator.hasNext()) {
+                iterator.next();
+                iterator.remove();
+            }
         }
-        queue.add(attemptId);
+        history.add(attemptId);
     }
 
     public boolean contains(String attemptId) {
-        return queue.contains(attemptId);
+        return history.contains(attemptId);
     }
 
     public void clear() {
-        queue.clear();
+        history.clear();
     }
 
 }

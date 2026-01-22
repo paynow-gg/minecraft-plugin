@@ -5,7 +5,7 @@ import org.spongepowered.plugin.metadata.model.PluginDependency
 plugins {
     `java-library`
     id("org.spongepowered.gradle.plugin") version "2.2.0"
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("com.gradleup.shadow") version "9.3.1"
 }
 
 repositories {

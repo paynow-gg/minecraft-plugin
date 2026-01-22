@@ -22,6 +22,8 @@ import java.util.logging.Level;
 
 public class PayNowFabric implements DedicatedServerModInitializer {
 
+    private static PayNowFabric instance;
+
     private MinecraftServer server;
 
     private PayNowLib payNowLib;
@@ -29,15 +31,19 @@ public class PayNowFabric implements DedicatedServerModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("PayNow");
 
     private int lastCheck = 0;
+    private int lastEventsCheck = 0;
 
     @Override
     public void onInitializeServer() {
         ServerLifecycleEvents.SERVER_STARTED.register(this::onServerStarted);
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
                 dispatcher.register(PayNowFabricCommand.generateCommand(this)));
+
+        new PlayerJoinListener().register();
     }
 
     private void onServerStarted(MinecraftServer server) {
+        instance = this;
         this.server = server;
 
         this.payNowLib = new PayNowLib(command -> CompletableFuture.supplyAsync(() -> {
@@ -62,10 +68,17 @@ public class PayNowFabric implements DedicatedServerModInitializer {
         ServerTickEvents.END_SERVER_TICK.register(s -> {
             if(lastCheck > 0) {
                 lastCheck--;
-                return;
+            } else {
+                lastCheck = this.payNowLib.getConfig().getApiCheckInterval() * 20;
+                this.check();
             }
-            lastCheck = this.payNowLib.getConfig().getApiCheckInterval() * 20;
-            this.check();
+
+            if(lastEventsCheck > 0) {
+                lastEventsCheck--;
+            } else {
+                lastEventsCheck = this.payNowLib.getConfig().getEventsQueueReportInterval() * 20;
+                this.payNowLib.reportEvents();
+            }
         });
 
         ServerLifecycleEvents.SERVER_STOPPING.register((__) -> PayNowUtils.ASYNC_EXEC.shutdown());
@@ -92,5 +105,9 @@ public class PayNowFabric implements DedicatedServerModInitializer {
 
     public PayNowLib getPayNowLib() {
         return payNowLib;
+    }
+
+    public static PayNowFabric getInstance() {
+        return instance;
     }
 }
