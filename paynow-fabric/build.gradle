@@ -4,6 +4,8 @@ plugins {
     id 'com.gradleup.shadow' version '9.3.1'
 }
 
+project.ext.mod_version = project.version
+
 repositories {
     // Add repositories to retrieve artifacts from in here.
     // You should only use this when depending on other mods because
