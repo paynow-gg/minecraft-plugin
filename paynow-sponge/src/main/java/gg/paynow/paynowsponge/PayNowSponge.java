@@ -66,7 +66,7 @@ public class PayNowSponge {
                 }
             }).build());
             return true;
-        }, ip, motd);
+        }, ip, motd.isEmpty() ? "Sponge Server" : motd);
 
         this.payNowLib.setLogCallback((s, level) -> {
             if(level == Level.SEVERE) {

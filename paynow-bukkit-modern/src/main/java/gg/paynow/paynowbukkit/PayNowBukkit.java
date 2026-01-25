@@ -28,11 +28,12 @@ public class PayNowBukkit extends JavaPlugin {
         Arrays.stream(this.getLogger().getHandlers()).forEach(handler -> handler.setLevel(Level.ALL));
         this.getLogger().setLevel(Level.ALL);
 
+        String motd = this.getServer().getMotd();
         this.payNowLib = new PayNowLib(command -> {
             Bukkit.getScheduler().runTask(this, () -> this.getServer()
                     .dispatchCommand(this.getServer().getConsoleSender(), command));
             return true;
-        }, this.getServer().getIp() + ":" + this.getServer().getPort(), this.getServer().getMotd());
+        }, this.getServer().getIp() + ":" + this.getServer().getPort(), motd.isEmpty() ? "Bukkit Server" : motd);
         this.payNowLib.setLogCallback((s, level) -> this.getLogger().log(level, s));
 
         this.payNowLib.loadPayNowConfig(this.getConfigFile());

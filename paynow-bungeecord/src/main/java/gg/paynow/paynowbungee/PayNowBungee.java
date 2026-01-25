@@ -42,7 +42,7 @@ public class PayNowBungee extends Plugin {
         this.payNowLib = new PayNowLib(command -> {
             CommandSender console = ProxyServer.getInstance().getConsole();
             return ProxyServer.getInstance().getPluginManager().dispatchCommand(console, command);
-        }, ip, motd);
+        }, ip, motd.isEmpty() ? "BungeeCord Server" : motd);
         this.payNowLib.setLogCallback((s, level) -> this.getLogger().log(level, s));
 
         this.payNowLib.loadPayNowConfig(this.getConfigFile());

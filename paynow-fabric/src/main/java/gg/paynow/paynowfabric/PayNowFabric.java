@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
@@ -46,12 +47,13 @@ public class PayNowFabric implements DedicatedServerModInitializer {
         instance = this;
         this.server = server;
 
+        String motd = server.getServerMotd();
         this.payNowLib = new PayNowLib(command -> CompletableFuture.supplyAsync(() -> {
             try {
                 server.getCommandManager().getDispatcher().execute(command, server.getCommandSource());
             } catch (CommandSyntaxException ignored) {}
             return true; // Assume the command always succeeds, else it gets stuck.
-        }, server).join(), server.getServerIp() + ":" + server.getServerPort(), server.getServerMotd());
+        }, server).join(), server.getServerIp() + ":" + server.getServerPort(), Objects.equals(motd, "") ? "Fabric Server" : motd);
 
         this.payNowLib.setLogCallback((s, level) -> {
             if (level == Level.SEVERE) {

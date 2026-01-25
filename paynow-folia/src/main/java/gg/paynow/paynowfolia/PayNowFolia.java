@@ -32,11 +32,12 @@ public class PayNowFolia extends JavaPlugin {
         Arrays.stream(this.getLogger().getHandlers()).forEach(handler -> handler.setLevel(Level.ALL));
         this.getLogger().setLevel(Level.ALL);
 
+        String motd = ((TextComponent)this.getServer().motd()).content();
         this.payNowLib = new PayNowLib(command -> {
             Bukkit.getScheduler().runTask(this, () -> this.getServer()
                     .dispatchCommand(this.getServer().getConsoleSender(), command));
             return true;
-        }, this.getServer().getIp() + ":" + this.getServer().getPort(), ((TextComponent)this.getServer().motd()).content());
+        }, this.getServer().getIp() + ":" + this.getServer().getPort(), motd.isEmpty() ? "Folia Server" : motd);
         this.payNowLib.setLogCallback((s, level) -> this.getLogger().log(level, s));
 
         this.payNowLib.loadPayNowConfig(this.getConfigFile());

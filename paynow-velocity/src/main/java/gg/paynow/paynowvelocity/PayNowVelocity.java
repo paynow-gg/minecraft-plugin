@@ -55,7 +55,7 @@ public class PayNowVelocity {
             } catch (InterruptedException | ExecutionException e) {
                 return false;
             }
-        }, ip, motd);
+        }, ip, motd.isEmpty() ? "Velocity Server" : motd);
 
         this.payNowLib.setLogCallback((s, level) -> this.logger.log(level, s));
 
