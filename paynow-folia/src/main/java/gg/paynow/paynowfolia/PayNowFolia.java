@@ -5,7 +5,6 @@ import gg.paynow.paynowlib.PayNowUtils;
 import io.papermc.paper.threadedregions.scheduler.GlobalRegionScheduler;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import net.kyori.adventure.text.TextComponent;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -34,7 +33,8 @@ public class PayNowFolia extends JavaPlugin {
 
         String motd = ((TextComponent)this.getServer().motd()).content();
         this.payNowLib = new PayNowLib(command -> {
-            Bukkit.getScheduler().runTask(this, () -> this.getServer()
+            GlobalRegionScheduler scheduler = this.getServer().getGlobalRegionScheduler();
+            scheduler.run(this, task -> this.getServer()
                     .dispatchCommand(this.getServer().getConsoleSender(), command));
             return true;
         }, this.getServer().getIp() + ":" + this.getServer().getPort(), motd.isEmpty() ? "Folia Server" : motd);
