@@ -17,7 +17,6 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
 import java.io.*;
-import java.io.*;
 import java.net.URI;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -29,6 +28,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 public class PayNowLib {
 
@@ -39,7 +39,7 @@ public class PayNowLib {
     private static final URI API_EVENTS_URL = URI.create("https://api.paynow.gg/v1/delivery/events");
 
     private final CommandHistory executedCommands;
-    private final List<String> successfulCommands;
+    private final List<String> commandsToAcknowledge;
 
     private final ConcurrentLinkedQueue<PayNowEvent> eventQueue;
 
@@ -57,7 +57,7 @@ public class PayNowLib {
     public PayNowLib(Function<String, Boolean> executeCommandCallback, String ip, String motd) {
         this.executeCommandCallback = executeCommandCallback;
         this.executedCommands = new CommandHistory(25);
-        this.successfulCommands = new ArrayList<>();
+        this.commandsToAcknowledge = new ArrayList<>();
         this.eventQueue = new ConcurrentLinkedQueue<>();
 
         this.ip = ip;
@@ -128,29 +128,29 @@ public class PayNowLib {
     private int processCommands(List<QueuedCommand> commands) {
         if(commands.isEmpty()) return 0;
 
-        this.successfulCommands.clear();
         for (QueuedCommand command : commands) {
             if(this.executedCommands.contains(command.getAttemptId())) continue;
 
             boolean success = this.executeCommandCallback.apply(command.getCommand());
             if(success) {
-                this.successfulCommands.add(command.getAttemptId());
+                this.commandsToAcknowledge.add(command.getAttemptId());
+                this.executedCommands.add(command.getAttemptId());
             } else {
                 this.warn("Failed to execute command: " + command.getCommand());
             }
         }
 
         if(this.config.doesLogCommandExecutions()) {
-            this.debug("Received " + commands.size() + " commands, executed " + this.successfulCommands.size());
+            this.debug("Received " + commands.size() + " commands, executed " + this.commandsToAcknowledge.size());
         }
 
-        this.acknowledgeCommands(this.successfulCommands);
+        this.acknowledgeCommands();
 
-        return this.successfulCommands.size();
+        return this.commandsToAcknowledge.size();
     }
 
-    private void acknowledgeCommands(List<String> commandsIds) {
-        if(commandsIds.isEmpty()) return;
+    private void acknowledgeCommands() {
+        if(this.commandsToAcknowledge.isEmpty()) return;
 
         String apiToken = this.config.getApiToken();
         if(apiToken == null) {
@@ -158,7 +158,8 @@ public class PayNowLib {
             return;
         }
 
-        String formatted = formatCommandIds(commandsIds);
+        List<String> commands = new ArrayList<>(this.commandsToAcknowledge);
+        String formatted = formatCommandIds(commands);
 
         PayNowUtils.ASYNC_EXEC.submit(() -> {
             try (CloseableHttpClient client = HttpClients.createDefault()) {
@@ -173,9 +174,7 @@ public class PayNowLib {
                     if(!PayNowUtils.isSuccess(response.getStatusLine().getStatusCode())) {
                         this.warn("Failed to acknowledge commands: " + body);
                     } else {
-                        for (String commandId : commandsIds) {
-                            this.executedCommands.add(commandId);
-                        }
+                        this.commandsToAcknowledge.removeAll(commands);
                     }
 
                     return body;
