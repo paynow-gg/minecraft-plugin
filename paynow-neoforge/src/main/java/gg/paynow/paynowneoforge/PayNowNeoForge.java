@@ -54,14 +54,15 @@ public class PayNowNeoForge {
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         server = event.getServer();
-
         String motd = server.getMotd();
+        String serverIp = server.getLocalIp();
+
         this.payNowLib = new PayNowLib(command -> CompletableFuture.supplyAsync(() -> {
             try {
                 server.getCommands().getDispatcher().execute(command, server.createCommandSourceStack());
             } catch (CommandSyntaxException ignored) {}
             return true; // Assume the command always succeeds, else it gets stuck.
-        }, server).join(), server.getLocalIp() + ":" + server.getPort(), Objects.equals(motd, "") ? "NeoForge Server" : motd);
+        }, server).join(), Objects.equals(serverIp, "") ? "0.0.0.0" : serverIp + ":" + server.getPort(), Objects.equals(motd, "") ? "NeoForge Server" : motd);
 
         this.payNowLib.setLogCallback((s, level) -> {
             if (level == Level.SEVERE) {
