@@ -48,7 +48,7 @@ public class PayNowNeoForge {
 
     @SubscribeEvent
     public void onCommandsRegistration(RegisterCommandsEvent event) {
-        PayNowNeoForgeCommand.register(event.getDispatcher(), event.getBuildContext(), event.getCommandSelection(), instance);
+        event.getDispatcher().register(PayNowNeoForgeCommand.generateCommand(this));
     }
 
     @SubscribeEvent
