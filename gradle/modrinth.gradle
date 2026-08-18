@@ -1,0 +1,12 @@
+apply plugin: 'com.modrinth.minotaur'
+
+modrinth {
+    projectId = project.modrinthProjectId
+    versionNumber = "${modrinth_loader}-${project.version}"
+    versionName = "PayNow ${project.version} (${modrinth_title})"
+    versionType = 'release'
+    uploadFile = tasks.named(modrinth_upload_task)
+    loaders = modrinth_supported_loaders.split(',').collect { it.trim() }
+    gameVersions = modrinth_supported_game_versions.split(',').collect { it.trim() }
+    changelog = System.getenv('CHANGELOG') ?: "Release ${project.version}"
+}

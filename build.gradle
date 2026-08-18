@@ -1,8 +1,18 @@
+plugins {
+    id 'com.modrinth.minotaur' version '2.9.0' apply false
+}
+
 allprojects {
     group = 'gg.paynow'
     version = '1.0.1'
 
+    ext.modrinthProjectId = System.getenv('MODRINTH_PROJECT_ID') ?: findProperty('modrinth_project_id')
+
     afterEvaluate { project ->
+        if (project.hasProperty('modrinth_loader')) {
+            project.apply from: "$rootDir/gradle/modrinth.gradle"
+        }
+
         if (project.tasks.findByName('build')) {
             tasks.named('build') {
                 if (project.name == "paynow-lib") {
