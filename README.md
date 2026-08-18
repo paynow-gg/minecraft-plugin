@@ -47,3 +47,4 @@ You can find all our modules if you wish to modify them yourself below.
 - [paynow-sponge](./paynow-sponge)
 - [paynow-velocity](./paynow-velocity)
 - [paynow-fabric](./paynow-fabric)
+- [paynow-neoforge](./paynow-neoforge)
