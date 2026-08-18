@@ -4,7 +4,7 @@ plugins {
 
 allprojects {
     group = 'gg.paynow'
-    version = '1.0.1'
+    version = '1.0.3'
 
     ext.modrinthProjectId = System.getenv('MODRINTH_PROJECT_ID') ?: findProperty('modrinth_project_id')
 
