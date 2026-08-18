@@ -17,6 +17,14 @@ dependencies {
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 
+processResources {
+    inputs.property 'version', project.version
+
+    filesMatching('paynow-lib.properties') {
+        expand version: project.version
+    }
+}
+
 test {
     useJUnitPlatform()
 }

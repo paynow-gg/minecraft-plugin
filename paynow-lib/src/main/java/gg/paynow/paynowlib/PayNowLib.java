@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BiConsumer;
@@ -32,7 +33,18 @@ import java.util.stream.Collectors;
 
 public class PayNowLib {
 
-    private static final String VERSION = "1.0.1";
+    private static final String VERSION = loadVersion();
+
+    private static String loadVersion() {
+        try (InputStream stream = PayNowLib.class.getResourceAsStream("/paynow-lib.properties")) {
+            if (stream == null) return "unknown";
+            Properties properties = new Properties();
+            properties.load(stream);
+            return properties.getProperty("version", "unknown");
+        } catch (IOException e) {
+            return "unknown";
+        }
+    }
 
     private static final URI API_QUEUE_URL = URI.create("https://api.paynow.gg/v1/delivery/command-queue/");
     private static final URI API_LINK_URL = URI.create("https://api.paynow.gg/v1/delivery/gameserver/link");
