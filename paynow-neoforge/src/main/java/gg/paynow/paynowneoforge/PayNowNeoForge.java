@@ -7,6 +7,8 @@ import gg.paynow.paynowlib.events.PayNowEvent;
 import gg.paynow.paynowlib.events.PlayerJoinEventData;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -31,7 +33,6 @@ public class PayNowNeoForge {
     public static final String MODID = "paynow_neoforge";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    private static PayNowNeoForge instance;
     private MinecraftServer server;
     private PayNowLib payNowLib;
 
@@ -39,11 +40,9 @@ public class PayNowNeoForge {
     private int lastEventsCheck = 0;
 
     public PayNowNeoForge() {
-        instance = this;
-        // Register ourselves for server and other game events we are interested in.
-        // Note that this is necessary if and only if we want *this* class (ExampleMod) to respond directly to events.
-        // Do not add this line if there are no @SubscribeEvent-annotated functions in this class, like onServerStarting() below.
-        NeoForge.EVENT_BUS.register(this);
+        if (FMLEnvironment.dist == Dist.DEDICATED_SERVER) {
+            NeoForge.EVENT_BUS.register(this);
+        }
     }
 
     @SubscribeEvent
@@ -53,7 +52,7 @@ public class PayNowNeoForge {
 
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
-        server = event.getServer();
+        this.server = event.getServer();
         String motd = server.getMotd();
         String serverIp = server.getLocalIp();
 
@@ -62,7 +61,7 @@ public class PayNowNeoForge {
                 server.getCommands().getDispatcher().execute(command, server.createCommandSourceStack());
             } catch (CommandSyntaxException ignored) {}
             return true; // Assume the command always succeeds, else it gets stuck.
-        }, server).join(), Objects.equals(serverIp, "") ? "0.0.0.0" : serverIp + ":" + server.getPort(), Objects.equals(motd, "") ? "NeoForge Server" : motd);
+        }, server).join(), Objects.equals(serverIp, "") ? "0.0.0.0:" + server.getPort() : serverIp + ":" + server.getPort(), Objects.equals(motd, "") ? "NeoForge Server" : motd);
 
         this.payNowLib.setLogCallback((s, level) -> {
             if (level == Level.SEVERE) {
@@ -79,6 +78,8 @@ public class PayNowNeoForge {
 
     @SubscribeEvent
     public void onServerTick(ServerTickEvent.Post event) {
+        if(this.payNowLib == null || this.server == null) return;
+
         if(lastCheck > 0) {
             lastCheck--;
         } else {
@@ -96,17 +97,18 @@ public class PayNowNeoForge {
 
     @SubscribeEvent
     public void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (this.payNowLib == null) return;
         if (event.getEntity().level().isClientSide) return;
         ServerPlayer player = event.getEntity() instanceof ServerPlayer ? (ServerPlayer) event.getEntity() : null;
         if (player == null) return;
         String ip = player.getIpAddress();
         PayNowEvent payNowEvent = new PayNowEvent("player_join", new Date(), new PlayerJoinEventData(ip, player.getUUID()));
-        instance.getPayNowLib().registerEvent(payNowEvent);
+        this.payNowLib.registerEvent(payNowEvent);
     }
 
     @SubscribeEvent
     public void onServerStopping(ServerStoppingEvent event) {
-        server = null;
+        this.server = null;
         PayNowUtils.ASYNC_EXEC.shutdown();
     }
 
@@ -117,7 +119,7 @@ public class PayNowNeoForge {
             onlinePlayersName.add(player.getName().getString());
             onlinePlayersUUID.add(player.getUUID());
         }
-        payNowLib.fetchPendingCommands(onlinePlayersName, onlinePlayersUUID);
+        this.payNowLib.fetchPendingCommands(onlinePlayersName, onlinePlayersUUID);
     }
 
     public void triggerConfigUpdate(){
