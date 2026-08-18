@@ -43,6 +43,7 @@ You can find all our modules if you wish to modify them yourself below.
 - [paynow-bukkit-legacy](./paynow-bukkit-legacy)
 - [paynow-bukkit-modern](./paynow-bukkit-modern)
 - [paynow-bungeecord](./paynow-bungeecord)
+- [paynow-folia](./paynow-folia)
 - [paynow-lib](./paynow-lib)
 - [paynow-sponge](./paynow-sponge)
 - [paynow-velocity](./paynow-velocity)
