@@ -3,6 +3,7 @@ package gg.paynow.paynowlib;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
 import gg.paynow.paynowlib.dto.CommandAttempt;
 import gg.paynow.paynowlib.dto.LinkRequest;
@@ -359,6 +360,9 @@ public class PayNowLib {
             }
         } catch (IOException e) {
             this.severe("Failed to read config file, using default values");
+            this.config = new PayNowConfig();
+        } catch (JsonParseException e) {
+            this.severe("Failed to parse config, using default values: " + e.getMessage());
             this.config = new PayNowConfig();
         }
 
