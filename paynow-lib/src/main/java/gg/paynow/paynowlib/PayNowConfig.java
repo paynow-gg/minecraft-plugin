@@ -4,19 +4,19 @@ import com.google.gson.annotations.SerializedName;
 
 public class PayNowConfig {
 
-    @SerializedName("API Token")
+    @SerializedName(value = "api_token", alternate = "API Token")
     private String apiToken = null;
 
-    @SerializedName("Check interval")
+    @SerializedName(value = "check_interval", alternate = "Check interval")
     private int apiCheckInterval = 10;
 
-    @SerializedName("Events queue report interval")
+    @SerializedName(value = "events_queue_report_interval", alternate = "Events queue report interval")
     private int eventsQueueReportInterval = 10;
 
-    @SerializedName("Log command executions")
+    @SerializedName(value = "log_command_executions", alternate = "Log command executions")
     private boolean logCommandExecutions = true;
 
-    @SerializedName("Debug")
+    @SerializedName(value = "debug", alternate = "Debug")
     private boolean debug = false;
 
     public PayNowConfig() {

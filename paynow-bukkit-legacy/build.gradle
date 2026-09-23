@@ -20,12 +20,13 @@ dependencies {
     compileOnly 'org.spigotmc:spigot-api:1.8-R0.1-SNAPSHOT'
     compileOnly 'net.md-5:bungeecord-chat:1.8-SNAPSHOT'
     shadow(implementation project(":paynow-lib"))
-    implementation group: 'com.google.code.gson', name: 'gson', version: '2.11.0'
+    shadow(implementation group: 'com.google.code.gson', name: 'gson', version: '2.11.0')
 }
 
 shadowJar {
     configurations = [project.configurations.shadow]
     archiveClassifier.set('')
+    relocate 'com.google.gson', 'gg.paynow.libs.gson'
 }
 
 processResources {
