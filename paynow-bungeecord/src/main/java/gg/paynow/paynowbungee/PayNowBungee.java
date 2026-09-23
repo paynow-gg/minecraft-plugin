@@ -2,6 +2,7 @@ package gg.paynow.paynowbungee;
 
 import gg.paynow.paynowlib.PayNowLib;
 import gg.paynow.paynowlib.PayNowUtils;
+import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.config.ListenerInfo;
@@ -32,7 +33,7 @@ public class PayNowBungee extends Plugin {
             ListenerInfo listenerInfo = this.getProxy().getConfig().getListeners().iterator().next();
             InetSocketAddress socketAddress = (InetSocketAddress) listenerInfo.getSocketAddress();
             ip = socketAddress.getHostString();
-            motd = listenerInfo.getMotd();
+            motd = ChatColor.stripColor(listenerInfo.getMotd());
         } catch (Exception e) {
             this.getLogger().severe("Failed to get port and motd from bungeecord config. Please check your bungeecord config.");
             this.getLogger().severe("PayNowBungee will not be enabled.");

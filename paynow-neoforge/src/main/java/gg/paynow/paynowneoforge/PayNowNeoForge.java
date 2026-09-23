@@ -5,6 +5,7 @@ import gg.paynow.paynowlib.PayNowLib;
 import gg.paynow.paynowlib.PayNowUtils;
 import gg.paynow.paynowlib.events.PayNowEvent;
 import gg.paynow.paynowlib.events.PlayerJoinEventData;
+import net.minecraft.ChatFormatting;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.api.distmarker.Dist;
@@ -53,7 +54,7 @@ public class PayNowNeoForge {
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         this.server = event.getServer();
-        String motd = server.getMotd();
+        String motd = ChatFormatting.stripFormatting(server.getMotd());
         String serverIp = server.getLocalIp();
 
         this.payNowLib = new PayNowLib(command -> CompletableFuture.supplyAsync(() -> {

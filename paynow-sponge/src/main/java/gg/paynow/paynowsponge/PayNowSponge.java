@@ -3,6 +3,7 @@ package gg.paynow.paynowsponge;
 import com.google.inject.Inject;
 import gg.paynow.paynowlib.PayNowLib;
 import gg.paynow.paynowlib.PayNowUtils;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.apache.logging.log4j.Logger;
 import org.spongepowered.api.Server;
 import org.spongepowered.api.Sponge;
@@ -52,7 +53,7 @@ public class PayNowSponge {
     public void onServerStart(final StartedEngineEvent<Server> event) {
         instance = this;
         String ip = event.game().server().boundAddress().map(InetSocketAddress::getHostString).orElse("Unknown");
-        String motd = event.game().server().motd().toString();
+        String motd = PlainTextComponentSerializer.plainText().serialize(event.game().server().motd());
         this.payNowLib = new PayNowLib(command -> {
             SystemSubject console = Sponge.systemSubject();
 

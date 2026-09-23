@@ -3,6 +3,7 @@ package gg.paynow.paynowbukkit;
 import gg.paynow.paynowlib.PayNowLib;
 import gg.paynow.paynowlib.PayNowUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -28,7 +29,7 @@ public class PayNowBukkit extends JavaPlugin {
         Arrays.stream(this.getLogger().getHandlers()).forEach(handler -> handler.setLevel(Level.ALL));
         this.getLogger().setLevel(Level.ALL);
 
-        String motd = this.getServer().getMotd();
+        String motd = ChatColor.stripColor(this.getServer().getMotd());
         this.payNowLib = new PayNowLib(command -> {
             Bukkit.getScheduler().runTask(this, () -> this.getServer()
                     .dispatchCommand(this.getServer().getConsoleSender(), command));

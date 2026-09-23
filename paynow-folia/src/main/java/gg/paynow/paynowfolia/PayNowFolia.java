@@ -4,7 +4,7 @@ import gg.paynow.paynowlib.PayNowLib;
 import gg.paynow.paynowlib.PayNowUtils;
 import io.papermc.paper.threadedregions.scheduler.GlobalRegionScheduler;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
-import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -31,7 +31,7 @@ public class PayNowFolia extends JavaPlugin {
         Arrays.stream(this.getLogger().getHandlers()).forEach(handler -> handler.setLevel(Level.ALL));
         this.getLogger().setLevel(Level.ALL);
 
-        String motd = ((TextComponent)this.getServer().motd()).content();
+        String motd = PlainTextComponentSerializer.plainText().serialize(this.getServer().motd());
         this.payNowLib = new PayNowLib(command -> {
             GlobalRegionScheduler scheduler = this.getServer().getGlobalRegionScheduler();
             scheduler.run(this, task -> this.getServer()

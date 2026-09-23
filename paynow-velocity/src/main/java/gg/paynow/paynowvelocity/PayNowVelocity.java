@@ -13,6 +13,7 @@ import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.scheduler.ScheduledTask;
 import gg.paynow.paynowlib.PayNowLib;
 import gg.paynow.paynowlib.PayNowUtils;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -47,7 +48,7 @@ public class PayNowVelocity {
     public void onProxyInitialization(ProxyInitializeEvent event) {
         instance = this;
         String ip = this.server.getBoundAddress().getHostString();
-        String motd = this.server.getConfiguration().getMotd().toString();
+        String motd = PlainTextComponentSerializer.plainText().serialize(this.server.getConfiguration().getMotd());
         this.payNowLib = new PayNowLib(command -> {
             CommandSource console = this.server.getConsoleCommandSource();
             try {

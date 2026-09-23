@@ -10,6 +10,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.Formatting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +48,7 @@ public class PayNowFabric implements DedicatedServerModInitializer {
         instance = this;
         this.server = server;
 
-        String motd = server.getServerMotd();
+        String motd = Formatting.strip(server.getServerMotd());
         this.payNowLib = new PayNowLib(command -> CompletableFuture.supplyAsync(() -> {
             try {
                 server.getCommandManager().getDispatcher().execute(command, server.getCommandSource());
