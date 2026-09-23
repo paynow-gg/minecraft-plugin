@@ -54,7 +54,7 @@ public class PayNowFolia extends JavaPlugin {
     @Override
     public void onDisable() {
         this.cancelTasks();
-        PayNowUtils.ASYNC_EXEC.shutdown();
+        PayNowUtils.shutdown();
     }
 
     private void startRunnables() {

@@ -9,12 +9,9 @@ import gg.paynow.paynowlib.dto.CommandAttempt;
 import gg.paynow.paynowlib.dto.LinkRequest;
 import gg.paynow.paynowlib.dto.PlayerList;
 import gg.paynow.paynowlib.events.PayNowEvent;
-import org.apache.http.HttpResponse;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
 import java.io.*;
@@ -100,7 +97,7 @@ public class PayNowLib {
         String formattedPlayers = formatPlayers(names, uuids);
 
         PayNowUtils.ASYNC_EXEC.submit(() -> {
-            try (CloseableHttpClient client = HttpClients.createDefault()) {
+            try {
                 HttpPost request = new HttpPost(API_QUEUE_URL);
                 request.setHeader("Content-Type", "application/json");
                 request.setHeader("Authorization", "Gameserver " + apiToken);
@@ -117,7 +114,7 @@ public class PayNowLib {
                     return body;
                 };
 
-                String responseBody = client.execute(request, responseHandler);
+                String responseBody = PayNowUtils.HTTP_CLIENT.execute(request, responseHandler);
 
                 handleResponse(responseBody);
             } catch (IOException e) {
@@ -175,7 +172,7 @@ public class PayNowLib {
         String formatted = formatCommandIds(commands);
 
         PayNowUtils.ASYNC_EXEC.submit(() -> {
-            try (CloseableHttpClient client = HttpClients.createDefault()) {
+            try {
                 HttpDeleteWithBody request = new HttpDeleteWithBody(API_QUEUE_URL);
                 request.setHeader("Content-Type", "application/json");
                 request.setHeader("Authorization", "Gameserver " + apiToken);
@@ -193,7 +190,7 @@ public class PayNowLib {
                     return body;
                 };
 
-                client.execute(request, responseHandler);
+                PayNowUtils.HTTP_CLIENT.execute(request, responseHandler);
             } catch (IOException e) {
                 severe("Failed to acknowledge commands: error executing request");
             }
@@ -216,7 +213,7 @@ public class PayNowLib {
         this.log(requestJson);
 
         PayNowUtils.ASYNC_EXEC.submit(() -> {
-            try (CloseableHttpClient client = HttpClients.createDefault()) {
+            try {
                 HttpPost request = new HttpPost(API_LINK_URL);
                 request.setHeader("Content-Type", "application/json");
                 request.setHeader("Authorization", "Gameserver " + apiToken);
@@ -233,7 +230,7 @@ public class PayNowLib {
                     return body;
                 };
 
-                String responseBody = client.execute(request, responseHandler);
+                String responseBody = PayNowUtils.HTTP_CLIENT.execute(request, responseHandler);
                 log(responseBody);
                 handleLinkResponse(responseBody);
             } catch (IOException e) {
@@ -300,15 +297,14 @@ public class PayNowLib {
 
         // Execute the HTTP request asynchronously
         PayNowUtils.ASYNC_EXEC.submit(() -> {
-            try(CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            try {
                 HttpPost request = new HttpPost(API_EVENTS_URL);
                 request.setHeader("Content-Type", "application/json");
                 request.setHeader("Authorization", "Gameserver " + apiToken);
                 request.setHeader("Accept", "application/json");
                 request.setEntity(new StringEntity(requestJson));
 
-                HttpResponse response = httpClient.execute(request);
-                int statusCode = response.getStatusLine().getStatusCode();
+                int statusCode = PayNowUtils.HTTP_CLIENT.execute(request, response -> response.getStatusLine().getStatusCode());
                 if(!PayNowUtils.isSuccess(statusCode)) {
                     this.warn("Failed to report events: " + statusCode);
                     // Re-add events to the front of the queue if failed to report

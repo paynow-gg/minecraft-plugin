@@ -59,7 +59,7 @@ public class PayNowBungee extends Plugin {
     @Override
     public void onDisable() {
         this.cancelTasks();
-        PayNowUtils.ASYNC_EXEC.shutdown();
+        PayNowUtils.shutdown();
     }
 
     private void startRunnable() {

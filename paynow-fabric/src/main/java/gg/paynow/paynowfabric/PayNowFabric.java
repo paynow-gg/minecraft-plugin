@@ -84,7 +84,7 @@ public class PayNowFabric implements DedicatedServerModInitializer {
             }
         });
 
-        ServerLifecycleEvents.SERVER_STOPPING.register((__) -> PayNowUtils.ASYNC_EXEC.shutdown());
+        ServerLifecycleEvents.SERVER_STOPPING.register((__) -> PayNowUtils.shutdown());
     }
 
     private void check() {

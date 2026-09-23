@@ -110,7 +110,7 @@ public class PayNowNeoForge {
     @SubscribeEvent
     public void onServerStopping(ServerStoppingEvent event) {
         this.server = null;
-        PayNowUtils.ASYNC_EXEC.shutdown();
+        PayNowUtils.shutdown();
     }
 
     private void check() {

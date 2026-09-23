@@ -78,7 +78,7 @@ public class PayNowVelocity {
     @Subscribe
     public void onProxyShutdown(ProxyShutdownEvent event) {
         this.stopRunnable();
-        PayNowUtils.ASYNC_EXEC.shutdown();
+        PayNowUtils.shutdown();
     }
 
     private void startRunnable() {

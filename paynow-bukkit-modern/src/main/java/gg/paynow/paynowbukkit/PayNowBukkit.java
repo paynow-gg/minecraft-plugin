@@ -51,7 +51,7 @@ public class PayNowBukkit extends JavaPlugin {
     @Override
     public void onDisable() {
         this.stopRunnable();
-        PayNowUtils.ASYNC_EXEC.shutdown();
+        PayNowUtils.shutdown();
     }
 
     private void startRunnable() {

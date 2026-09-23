@@ -120,7 +120,7 @@ public class PayNowSponge {
     @Listener
     public void onServerStopping(final StoppingEngineEvent<Server> event) {
         this.stopRunnable();
-        PayNowUtils.ASYNC_EXEC.shutdown();
+        PayNowUtils.shutdown();
     }
 
     private void stopRunnable() {
