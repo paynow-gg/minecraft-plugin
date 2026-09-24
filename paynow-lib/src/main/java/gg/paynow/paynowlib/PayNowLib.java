@@ -2,6 +2,7 @@ package gg.paynow.paynowlib;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
@@ -44,6 +45,8 @@ public class PayNowLib {
             return "unknown";
         }
     }
+
+    private static final String LINK_RETRY_HINT = " Run /paynow link <token> to try again. If it keeps failing, contact PayNow support.";
 
     private static final URI API_QUEUE_URL = URI.create("https://api.paynow.gg/v1/delivery/command-queue/");
     private static final URI API_LINK_URL = URI.create("https://api.paynow.gg/v1/delivery/gameserver/link");
@@ -235,48 +238,88 @@ public class PayNowLib {
                 ResponseHandler<String> responseHandler = response -> {
                     String body = response.getEntity() == null ? null : EntityUtils.toString(response.getEntity());
                     this.debug("Linked token: " + body);
-                    if(!PayNowUtils.isSuccess(response.getStatusLine().getStatusCode())) {
-                        this.warn("Failed to link token: " + body);
+                    int statusCode = response.getStatusLine().getStatusCode();
+                    if(!PayNowUtils.isSuccess(statusCode)) {
+                        this.debug("Link response (HTTP " + statusCode + "): " + body);
+                        if(statusCode == 401 || statusCode == 403) {
+                            this.warn("PayNow rejected this token. Copy it again from your PayNow dashboard and run /paynow link <token>.");
+                        } else {
+                            this.warn("Couldn't link to PayNow (HTTP " + statusCode + ")." + LINK_RETRY_HINT);
+                        }
+                        return null;
                     }
 
                     return body;
                 };
 
                 String responseBody = PayNowUtils.HTTP_CLIENT.execute(request, responseHandler);
+                if(responseBody == null) return;
+
                 log(responseBody);
                 handleLinkResponse(responseBody);
             } catch (IOException e) {
-                severe("Failed to link token: error executing request");
+                severe("Couldn't reach PayNow to link this server. Check that the server can connect to the internet." + LINK_RETRY_HINT);
             }
         });
     }
 
     private void handleLinkResponse(String responseBody) {
-        Gson gson = new Gson();
-        JsonObject responseJson = gson.fromJson(responseBody, JsonObject.class);
-
-        if(responseJson.has("update_available") && responseJson.get("update_available").getAsBoolean()) {
-            String latestVersion = responseJson.get("latest_version").getAsString();
-            this.warn("A new version of the PayNow plugin is available: " + latestVersion + "! Your version: " + VERSION);
-        }
-
-        if(responseJson.has("previously_linked")) {
-            JsonObject previouslyLinked = responseJson.get("previously_linked").getAsJsonObject();
-            String hostname = previouslyLinked.get("host_name").getAsString();
-            String ip = previouslyLinked.get("ip").getAsString();
-            this.warn("This token has been previously used on \"" + hostname + "\" (" + ip + "), ensure you have removed this token from the previous server.");
-        }
-
-        if(!responseJson.has("gameserver")) {
-            this.warn("PayNow API did not return a GameServer object, this may be a transient issue, please try again or contact support.");
+        JsonObject responseJson = parseJsonObject(responseBody);
+        if(responseJson == null) {
+            this.warn("Couldn't link to PayNow because its response couldn't be read." + LINK_RETRY_HINT);
             return;
         }
 
-        JsonObject gameServer = responseJson.get("gameserver").getAsJsonObject();
-        String gsName = gameServer.get("name").getAsString();
-        String gsId = gameServer.get("id").getAsString();
+        JsonElement updateAvailable = responseJson.get("update_available");
+        if(updateAvailable != null && updateAvailable.isJsonPrimitive() && updateAvailable.getAsBoolean()) {
+            String latestVersion = getString(responseJson, "latest_version", null);
+            String available = latestVersion == null ? "" : " (" + latestVersion + ")";
+            this.warn("A new version of the PayNow plugin is available" + available + ". You're running " + VERSION + ".");
+        }
+
+        JsonObject previouslyLinked = getObject(responseJson, "previously_linked");
+        if(previouslyLinked != null) {
+            String hostname = getString(previouslyLinked, "host_name", null);
+            String ip = getString(previouslyLinked, "ip", null);
+            this.warn("This token is also linked to " + describeServer(hostname, ip) + ". Remove it from that server so commands only run in one place.");
+        }
+
+        JsonObject gameServer = getObject(responseJson, "gameserver");
+        if(gameServer == null) {
+            this.warn("Couldn't link to PayNow because its response didn't include this server." + LINK_RETRY_HINT);
+            return;
+        }
+
+        String gsName = getString(gameServer, "name", "unknown");
+        String gsId = getString(gameServer, "id", "unknown");
 
         this.log("Successfully connected to PayNow using the token for \"" + gsName + "\" (" + gsId + ")");
+    }
+
+    private static String describeServer(String hostname, String ip) {
+        if(hostname != null && ip != null) return "\"" + hostname + "\" (" + ip + ")";
+        if(hostname != null) return "\"" + hostname + "\"";
+        if(ip != null) return ip;
+        return "another server";
+    }
+
+    private static JsonObject parseJsonObject(String json) {
+        try {
+            JsonElement element = new Gson().fromJson(json, JsonElement.class);
+            return element != null && element.isJsonObject() ? element.getAsJsonObject() : null;
+        } catch (JsonParseException e) {
+            return null;
+        }
+    }
+
+    private static JsonObject getObject(JsonObject parent, String key) {
+        JsonElement element = parent.get(key);
+        return element != null && element.isJsonObject() ? element.getAsJsonObject() : null;
+    }
+
+    private static String getString(JsonObject parent, String key, String fallback) {
+        JsonElement element = parent.get(key);
+        return element != null && element.isJsonPrimitive() ? element.getAsString() : fallback;
     }
 
     public void registerEvent(PayNowEvent event) {
