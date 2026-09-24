@@ -20,7 +20,7 @@ public class PayNowFabricCommand {
                                     String token = context.getArgument("token", String.class);
                                     mod.getPayNowLib().getConfig().setApiToken(token);
                                     mod.triggerConfigUpdate();
-                                    context.getSource().sendFeedback(() -> Text.literal("API token updated").formatted(Formatting.RED), false);
+                                    context.getSource().sendFeedback(() -> Text.literal("API token updated").formatted(Formatting.GREEN), false);
                                     return 1;
                                 })));
     }

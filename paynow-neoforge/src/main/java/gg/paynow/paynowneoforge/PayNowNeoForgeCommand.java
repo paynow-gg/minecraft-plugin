@@ -18,7 +18,7 @@ public class PayNowNeoForgeCommand {
                                     String token = context.getArgument("token", String.class);
                                     mod.getPayNowLib().getConfig().setApiToken(token);
                                     mod.triggerConfigUpdate();
-                                    context.getSource().sendSystemMessage(Component.literal("API token updated").withStyle(ChatFormatting.RED));
+                                    context.getSource().sendSystemMessage(Component.literal("API token updated").withStyle(ChatFormatting.GREEN));
                                     return 1;
                                 })));
     }
