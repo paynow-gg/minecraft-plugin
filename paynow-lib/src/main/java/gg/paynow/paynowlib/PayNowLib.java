@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -50,6 +51,8 @@ public class PayNowLib {
 
     private final CommandHistory executedCommands;
     private final List<String> commandsToAcknowledge;
+    private final Object commandLock = new Object();
+    private final AtomicBoolean fetchInProgress = new AtomicBoolean(false);
 
     private final ConcurrentLinkedQueue<PayNowEvent> eventQueue;
 
@@ -94,6 +97,11 @@ public class PayNowLib {
             return;
         }
 
+        if(!this.fetchInProgress.compareAndSet(false, true)) {
+            this.debug("Previous command fetch is still running, skipping this one");
+            return;
+        }
+
         String formattedPlayers = formatPlayers(names, uuids);
 
         PayNowUtils.ASYNC_EXEC.submit(() -> {
@@ -119,6 +127,8 @@ public class PayNowLib {
                 handleResponse(responseBody);
             } catch (IOException e) {
                 severe("Failed to fetch commands: error executing request");
+            } finally {
+                this.fetchInProgress.set(false);
             }
         });
     }
@@ -138,25 +148,29 @@ public class PayNowLib {
     private int processCommands(List<QueuedCommand> commands) {
         if(commands.isEmpty()) return 0;
 
-        for (QueuedCommand command : commands) {
-            if(this.executedCommands.contains(command.getAttemptId())) continue;
+        synchronized (this.commandLock) {
+            int executed = 0;
+            for (QueuedCommand command : commands) {
+                if(this.executedCommands.contains(command.getAttemptId())) continue;
 
-            boolean success = this.executeCommandCallback.apply(command.getCommand());
-            if(success) {
-                this.commandsToAcknowledge.add(command.getAttemptId());
-                this.executedCommands.add(command.getAttemptId());
-            } else {
-                this.warn("Failed to execute command: " + command.getCommand());
+                boolean success = this.executeCommandCallback.apply(command.getCommand());
+                if(success) {
+                    this.commandsToAcknowledge.add(command.getAttemptId());
+                    this.executedCommands.add(command.getAttemptId());
+                    executed++;
+                } else {
+                    this.warn("Failed to execute command: " + command.getCommand());
+                }
             }
+
+            if(this.config.doesLogCommandExecutions()) {
+                this.debug("Received " + commands.size() + " commands, executed " + executed);
+            }
+
+            this.acknowledgeCommands();
+
+            return executed;
         }
-
-        if(this.config.doesLogCommandExecutions()) {
-            this.debug("Received " + commands.size() + " commands, executed " + this.commandsToAcknowledge.size());
-        }
-
-        this.acknowledgeCommands();
-
-        return this.commandsToAcknowledge.size();
     }
 
     private void acknowledgeCommands() {
@@ -171,30 +185,28 @@ public class PayNowLib {
         List<String> commands = new ArrayList<>(this.commandsToAcknowledge);
         String formatted = formatCommandIds(commands);
 
-        PayNowUtils.ASYNC_EXEC.submit(() -> {
-            try {
-                HttpDeleteWithBody request = new HttpDeleteWithBody(API_QUEUE_URL);
-                request.setHeader("Content-Type", "application/json");
-                request.setHeader("Authorization", "Gameserver " + apiToken);
-                request.setHeader("Accept", "application/json");
-                request.setEntity(new StringEntity(formatted));
+        try {
+            HttpDeleteWithBody request = new HttpDeleteWithBody(API_QUEUE_URL);
+            request.setHeader("Content-Type", "application/json");
+            request.setHeader("Authorization", "Gameserver " + apiToken);
+            request.setHeader("Accept", "application/json");
+            request.setEntity(new StringEntity(formatted));
 
-                ResponseHandler<String> responseHandler = response -> {
-                    String body = response.getEntity() == null ? null : EntityUtils.toString(response.getEntity());
-                    if(!PayNowUtils.isSuccess(response.getStatusLine().getStatusCode())) {
-                        this.warn("Failed to acknowledge commands: " + body);
-                    } else {
-                        this.commandsToAcknowledge.removeAll(commands);
-                    }
+            ResponseHandler<String> responseHandler = response -> {
+                String body = response.getEntity() == null ? null : EntityUtils.toString(response.getEntity());
+                if(!PayNowUtils.isSuccess(response.getStatusLine().getStatusCode())) {
+                    this.warn("Failed to acknowledge commands: " + body);
+                } else {
+                    this.commandsToAcknowledge.removeAll(commands);
+                }
 
-                    return body;
-                };
+                return body;
+            };
 
-                PayNowUtils.HTTP_CLIENT.execute(request, responseHandler);
-            } catch (IOException e) {
-                severe("Failed to acknowledge commands: error executing request");
-            }
-        });
+            PayNowUtils.HTTP_CLIENT.execute(request, responseHandler);
+        } catch (IOException e) {
+            severe("Failed to acknowledge commands: error executing request");
+        }
     }
 
     private void linkToken() {
