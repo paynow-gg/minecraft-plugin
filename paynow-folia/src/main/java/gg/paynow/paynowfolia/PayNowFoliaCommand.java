@@ -1,7 +1,6 @@
 package gg.paynow.paynowfolia;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import gg.paynow.paynowlib.PayNowLang;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
@@ -21,7 +20,7 @@ public record PayNowFoliaCommand(PayNowFolia plugin) implements TabExecutor {
             command.setExecutor(this);
             command.setTabCompleter(this);
 
-            command.permissionMessage(Component.text("You do not have permission to use this command").color(NamedTextColor.RED));
+            command.permissionMessage(PayNowLang.NO_PERMISSION.get());
         }
     }
 
@@ -32,12 +31,12 @@ public record PayNowFoliaCommand(PayNowFolia plugin) implements TabExecutor {
                 String token = args[1];
                 plugin.getPayNowLib().getConfig().setApiToken(token);
                 plugin.triggerConfigUpdate();
-                sender.sendMessage(Component.text("API token updated").color(NamedTextColor.GREEN));
+                sender.sendMessage(PayNowLang.TOKEN_UPDATED.get());
             } else {
-                sender.sendMessage(Component.text("Invalid arguments").color(NamedTextColor.RED));
+                sender.sendMessage(PayNowLang.INVALID_ARGUMENTS.get());
             }
         } else {
-            sender.sendMessage(Component.text("Invalid arguments").color(NamedTextColor.RED));
+            sender.sendMessage(PayNowLang.INVALID_ARGUMENTS.get());
         }
         return true;
     }

@@ -1,9 +1,9 @@
 package gg.paynow.paynowfabric;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import gg.paynow.paynowlib.PayNowLang;
+import net.kyori.adventure.text.Component;
 import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 
 import static com.mojang.brigadier.arguments.StringArgumentType.string;
 import static net.minecraft.server.command.CommandManager.argument;
@@ -20,8 +20,12 @@ public class PayNowFabricCommand {
                                     String token = context.getArgument("token", String.class);
                                     mod.getPayNowLib().getConfig().setApiToken(token);
                                     mod.triggerConfigUpdate();
-                                    context.getSource().sendFeedback(() -> Text.literal("API token updated").formatted(Formatting.GREEN), false);
+                                    sendFeedback(context.getSource(), PayNowLang.TOKEN_UPDATED.get());
                                     return 1;
                                 })));
+    }
+
+    private static void sendFeedback(ServerCommandSource source, Component message) {
+        source.sendFeedback(() -> FabricText.toNative(message, source.getRegistryManager()), false);
     }
 }

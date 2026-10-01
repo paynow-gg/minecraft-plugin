@@ -2,6 +2,7 @@ package gg.paynow.paynowbungee;
 
 import gg.paynow.paynowlib.PayNowLib;
 import gg.paynow.paynowlib.PayNowUtils;
+import net.kyori.adventure.platform.bungeecord.BungeeAudiences;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
@@ -20,6 +21,7 @@ public class PayNowBungee extends Plugin {
     private static PayNowBungee instance;
 
     private PayNowLib payNowLib;
+    private BungeeAudiences audiences;
 
     private int runnableId = -1;
     private int reportEventsRunnableId = -1;
@@ -52,6 +54,7 @@ public class PayNowBungee extends Plugin {
 
         this.startRunnable();
 
+        this.audiences = BungeeAudiences.create(this);
         this.getProxy().getPluginManager().registerCommand(this, new PayNowBungeeCommand(this));
         this.getProxy().getPluginManager().registerListener(this, new PlayerJoinListener());
     }
@@ -60,6 +63,9 @@ public class PayNowBungee extends Plugin {
     public void onDisable() {
         this.cancelTasks();
         PayNowUtils.shutdown();
+        if(this.audiences != null) {
+            this.audiences.close();
+        }
     }
 
     private void startRunnable() {
@@ -91,6 +97,10 @@ public class PayNowBungee extends Plugin {
 
     private File getConfigFile() {
         return new File(this.getDataFolder(), "config.json");
+    }
+
+    public BungeeAudiences getAudiences() {
+        return audiences;
     }
 
     public PayNowLib getPayNowLib() {

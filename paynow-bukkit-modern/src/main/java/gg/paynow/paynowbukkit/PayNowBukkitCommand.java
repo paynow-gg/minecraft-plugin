@@ -1,6 +1,8 @@
 package gg.paynow.paynowbukkit;
 
-import org.bukkit.ChatColor;
+import net.kyori.adventure.audience.Audience;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import gg.paynow.paynowlib.PayNowLang;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
@@ -21,23 +23,24 @@ public class PayNowBukkitCommand implements TabExecutor {
             command.setExecutor(this);
             command.setTabCompleter(this);
 
-            command.setPermissionMessage(ChatColor.RED + "You do not have permission to use this command");
+            command.setPermissionMessage(LegacyComponentSerializer.legacySection().serialize(PayNowLang.NO_PERMISSION.get()));
         }
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        Audience audience = plugin.getAudiences().sender(sender);
         if(args.length == 2) {
             if(args[0].equalsIgnoreCase("link")) {
                 String token = args[1];
                 plugin.getPayNowLib().getConfig().setApiToken(token);
                 plugin.triggerConfigUpdate();
-                sender.sendMessage(ChatColor.GREEN + "API token updated");
+                audience.sendMessage(PayNowLang.TOKEN_UPDATED.get());
             } else {
-                sender.sendMessage(ChatColor.RED + "Invalid arguments");
+                audience.sendMessage(PayNowLang.INVALID_ARGUMENTS.get());
             }
         } else {
-            sender.sendMessage(ChatColor.RED + "Invalid arguments");
+            audience.sendMessage(PayNowLang.INVALID_ARGUMENTS.get());
         }
         return true;
     }

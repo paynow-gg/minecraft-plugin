@@ -32,6 +32,8 @@ dependencies {
     implementation "net.neoforged:neoforge:${neo_version}"
 
     shadowed(implementation project(":paynow-lib"))
+    shadowed(implementation 'net.kyori:adventure-text-minimessage:4.21.0')
+    shadowed(implementation 'net.kyori:adventure-text-serializer-gson:4.21.0')
 }
 
 tasks.withType(ProcessResources).configureEach {
@@ -56,6 +58,12 @@ shadowJar {
     configurations = [project.configurations.shadowed]
     archiveClassifier.set('')
     exclude 'net/minecraft/**'
+    dependencies {
+        exclude(dependency('com.google.code.gson:gson'))
+        exclude(dependency('org.jetbrains:annotations'))
+    }
+    mergeServiceFiles()
+    relocate 'net.kyori', 'gg.paynow.libs.kyori'
 }
 
 tasks.named('jar', Jar) {

@@ -23,10 +23,20 @@ dependencies {
     compileOnly 'net.md-5:bungeecord-api:1.16-R0.4'
     compileOnly 'net.md-5:brigadier:1.0.16-SNAPSHOT'
     shadow(implementation project(":paynow-lib"))
+    shadow(implementation 'net.kyori:adventure-platform-bungeecord:4.4.1')
+    shadow(implementation 'net.kyori:adventure-text-minimessage:4.21.0')
+}
+
+configurations.shadow {
+    exclude group: 'com.google.code.gson'
+    exclude group: 'org.jetbrains', module: 'annotations'
 }
 
 shadowJar {
+    configurations = [project.configurations.shadow]
     archiveClassifier.set('')
+    mergeServiceFiles()
+    relocate 'net.kyori', 'gg.paynow.libs.kyori'
 }
 
 processResources {

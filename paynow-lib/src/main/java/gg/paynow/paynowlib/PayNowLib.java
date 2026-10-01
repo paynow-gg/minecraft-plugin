@@ -421,6 +421,8 @@ public class PayNowLib {
             this.savePayNowConfig(configFile);
         }
 
+        PayNowLang.load(new File(configFile.getParentFile(), "lang.json"), this::warn);
+
         this.linkToken();
     }
 

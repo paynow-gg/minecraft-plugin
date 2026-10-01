@@ -4,8 +4,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandSource;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import gg.paynow.paynowlib.PayNowLang;
 
 import static com.velocitypowered.api.command.BrigadierCommand.*;
 
@@ -21,7 +20,7 @@ public class PayNowVelocityCommand {
                                     String token = StringArgumentType.getString(context, "token");
                                     plugin.getPayNowLib().getConfig().setApiToken(token);
                                     plugin.triggerConfigUpdate();
-                                    source.sendMessage(Component.text("API token updated").color(NamedTextColor.GREEN));
+                                    source.sendMessage(PayNowLang.TOKEN_UPDATED.get());
                                     return 1;
                                 })))
                 .build();

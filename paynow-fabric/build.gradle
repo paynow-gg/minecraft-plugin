@@ -24,6 +24,8 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
     shadow(implementation project(":paynow-lib"))
+    shadow(implementation 'net.kyori:adventure-text-minimessage:4.21.0')
+    shadow(implementation 'net.kyori:adventure-text-serializer-gson:4.21.0')
 }
 
 processResources {
@@ -71,6 +73,12 @@ jar {
 shadowJar {
     configurations = [project.configurations.shadow]
     archiveClassifier.set('do-not-release')
+    dependencies {
+        exclude(dependency('com.google.code.gson:gson'))
+        exclude(dependency('org.jetbrains:annotations'))
+    }
+    mergeServiceFiles()
+    relocate 'net.kyori', 'gg.paynow.libs.kyori'
 }
 
 // configure the maven publication

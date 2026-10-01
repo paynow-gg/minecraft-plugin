@@ -1,8 +1,8 @@
 package gg.paynow.paynowsponge;
 
+import gg.paynow.paynowlib.PayNowLang;
 import net.kyori.adventure.identity.Identity;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.spongepowered.api.command.Command;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.parameter.Parameter;
@@ -16,7 +16,7 @@ public class PayNowSpongeCommand {
                     String token = context.requireOne(tokenParameter);
                     plugin.getPayNowLib().getConfig().setApiToken(token);
                     plugin.triggerConfigUpdate();
-                    context.sendMessage(Identity.nil(), Component.text("API token updated").color(NamedTextColor.GREEN));
+                    context.sendMessage(Identity.nil(), PayNowLang.TOKEN_UPDATED.get());
                     return CommandResult.success();
                 })
                 .addParameter(tokenParameter)

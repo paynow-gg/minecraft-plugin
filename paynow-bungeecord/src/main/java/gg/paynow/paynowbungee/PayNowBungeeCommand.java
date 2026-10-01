@@ -1,8 +1,8 @@
 package gg.paynow.paynowbungee;
 
-import net.md_5.bungee.api.ChatColor;
+import gg.paynow.paynowlib.PayNowLang;
+import net.kyori.adventure.audience.Audience;
 import net.md_5.bungee.api.CommandSender;
-import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.plugin.Command;
 
 public class PayNowBungeeCommand extends Command {
@@ -16,17 +16,18 @@ public class PayNowBungeeCommand extends Command {
 
     @Override
     public void execute(CommandSender sender, String[] args) {
+        Audience audience = plugin.getAudiences().sender(sender);
         if(args.length == 2) {
             if(args[0].equalsIgnoreCase("link")) {
                 String token = args[1];
                 plugin.getPayNowLib().getConfig().setApiToken(token);
                 plugin.triggerConfigUpdate();
-                sender.sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + "API token updated"));
+                audience.sendMessage(PayNowLang.TOKEN_UPDATED.get());
             } else {
-                sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "Invalid arguments"));
+                audience.sendMessage(PayNowLang.INVALID_ARGUMENTS.get());
             }
         } else {
-            sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "Invalid arguments"));
+            audience.sendMessage(PayNowLang.INVALID_ARGUMENTS.get());
         }
     }
 }

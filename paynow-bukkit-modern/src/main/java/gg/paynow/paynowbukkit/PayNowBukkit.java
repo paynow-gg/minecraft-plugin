@@ -2,6 +2,7 @@ package gg.paynow.paynowbukkit;
 
 import gg.paynow.paynowlib.PayNowLib;
 import gg.paynow.paynowlib.PayNowUtils;
+import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -19,6 +20,7 @@ public class PayNowBukkit extends JavaPlugin {
     private static PayNowBukkit instance;
 
     private PayNowLib payNowLib;
+    private BukkitAudiences audiences;
 
     private int runnableId = -1;
     private int reportEventsRunnableId = -1;
@@ -39,6 +41,8 @@ public class PayNowBukkit extends JavaPlugin {
 
         this.payNowLib.loadPayNowConfig(this.getConfigFile());
 
+        this.audiences = BukkitAudiences.create(this);
+
         new PayNowBukkitCommand(this);
 
         this.getServer().getPluginManager().registerEvents(new PlayerJoinListener(), this);
@@ -52,6 +56,9 @@ public class PayNowBukkit extends JavaPlugin {
     public void onDisable() {
         this.stopRunnable();
         PayNowUtils.shutdown();
+        if(this.audiences != null) {
+            this.audiences.close();
+        }
     }
 
     private void startRunnable() {
@@ -87,6 +94,10 @@ public class PayNowBukkit extends JavaPlugin {
     public void triggerConfigUpdate(){
         this.payNowLib.savePayNowConfig(this.getConfigFile());
         this.payNowLib.updateConfig();
+    }
+
+    public BukkitAudiences getAudiences() {
+        return audiences;
     }
 
     public PayNowLib getPayNowLib() {

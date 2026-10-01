@@ -1,10 +1,10 @@
 package gg.paynow.paynowneoforge;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import net.minecraft.ChatFormatting;
+import gg.paynow.paynowlib.PayNowLang;
+import net.kyori.adventure.text.Component;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.network.chat.Component;
 
 import static com.mojang.brigadier.arguments.StringArgumentType.string;
 
@@ -18,8 +18,12 @@ public class PayNowNeoForgeCommand {
                                     String token = context.getArgument("token", String.class);
                                     mod.getPayNowLib().getConfig().setApiToken(token);
                                     mod.triggerConfigUpdate();
-                                    context.getSource().sendSystemMessage(Component.literal("API token updated").withStyle(ChatFormatting.GREEN));
+                                    sendMessage(context.getSource(), PayNowLang.TOKEN_UPDATED.get());
                                     return 1;
                                 })));
+    }
+
+    private static void sendMessage(CommandSourceStack source, Component message) {
+        source.sendSystemMessage(NeoForgeText.toNative(message, source.registryAccess()));
     }
 }
