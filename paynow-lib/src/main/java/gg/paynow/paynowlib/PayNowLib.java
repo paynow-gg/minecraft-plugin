@@ -6,10 +6,18 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
+import gg.paynow.paynowlib.dto.CheckoutRequest;
 import gg.paynow.paynowlib.dto.CommandAttempt;
+import gg.paynow.paynowlib.dto.CustomerAuthRequest;
 import gg.paynow.paynowlib.dto.LinkRequest;
 import gg.paynow.paynowlib.dto.PlayerList;
 import gg.paynow.paynowlib.events.PayNowEvent;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.minimessage.tag.Tag;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import org.apache.http.HttpResponse;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -24,6 +32,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -51,6 +60,8 @@ public class PayNowLib {
     private static final URI API_QUEUE_URL = URI.create("https://api.paynow.gg/v1/delivery/command-queue/");
     private static final URI API_LINK_URL = URI.create("https://api.paynow.gg/v1/delivery/gameserver/link");
     private static final URI API_EVENTS_URL = URI.create("https://api.paynow.gg/v1/delivery/events");
+    private static final URI API_CUSTOMER_AUTH_URL = URI.create("https://api.paynow.gg/v1/store/customer/auth");
+    private static final URI API_CHECKOUT_URL = URI.create("https://api.paynow.gg/v1/checkouts");
 
     private final CommandHistory executedCommands;
     private final List<String> commandsToAcknowledge;
@@ -69,6 +80,8 @@ public class PayNowLib {
 
     private final String ip;
     private final String motd;
+
+    private volatile LinkedStore linkedStore = null;
 
     public PayNowLib(Function<String, Boolean> executeCommandCallback, String ip, String motd) {
         this.executeCommandCallback = executeCommandCallback;
@@ -214,6 +227,7 @@ public class PayNowLib {
 
     private void linkToken() {
         this.debug("Linking token to game server");
+        this.linkedStore = null;
         String apiToken = this.config.getApiToken();
         if(apiToken == null) {
             this.warn("API Token is not set");
@@ -293,6 +307,13 @@ public class PayNowLib {
         String gsName = getString(gameServer, "name", "unknown");
         String gsId = getString(gameServer, "id", "unknown");
 
+        String storeId = getString(responseJson, "store_id", null);
+        if(storeId == null) {
+            this.warn("PayNow didn't return this server's store, so /paynow checkout won't work until the next link.");
+        } else {
+            this.linkedStore = new LinkedStore(storeId, getString(responseJson, "store_platform", null));
+        }
+
         this.log("Successfully connected to PayNow using the token for \"" + gsName + "\" (" + gsId + ")");
     }
 
@@ -320,6 +341,108 @@ public class PayNowLib {
     private static String getString(JsonObject parent, String key, String fallback) {
         JsonElement element = parent.get(key);
         return element != null && element.isJsonPrimitive() ? element.getAsString() : fallback;
+    }
+
+    public void sendCheckoutLink(List<String> productIds, CheckoutTarget target, Consumer<Component> sendToSender, Executor serverThread) {
+        PayNowUtils.ASYNC_EXEC.submit(() -> {
+            try {
+                LinkedStore store = this.linkedStore;
+                if(store == null) {
+                    throw new CheckoutException("this server isn't linked to a PayNow store");
+                }
+
+                String customerToken = this.authenticateCustomer(store, target);
+                String checkoutUrl = this.createCheckout(productIds, customerToken, target);
+                serverThread.execute(() -> {
+                    if(!target.isOnline()) {
+                        sendToSender.accept(PayNowLang.CHECKOUT_PLAYER_LEFT.get("player", target.getName()));
+                        return;
+                    }
+
+                    PayNowLang linkMessage = Floodgate.isBedrockPlayer(target.getUuid())
+                            ? PayNowLang.CHECKOUT_LINK_BEDROCK
+                            : PayNowLang.CHECKOUT_LINK;
+                    target.sendMessage(linkMessage.get(
+                            TagResolver.resolver("link", Tag.styling(ClickEvent.openUrl(checkoutUrl))),
+                            Placeholder.unparsed("url", checkoutUrl),
+                            Placeholder.unparsed("player", target.getName())));
+                    sendToSender.accept(PayNowLang.CHECKOUT_SENT.get("player", target.getName()));
+                });
+            } catch (CheckoutException e) {
+                this.warn("Failed to create checkout: " + e.getMessage());
+                serverThread.execute(() -> sendToSender.accept(PayNowLang.CHECKOUT_FAILED.get("error", e.getMessage())));
+            } catch (IOException e) {
+                this.severe("Failed to create checkout: error executing request");
+                serverThread.execute(() -> sendToSender.accept(PayNowLang.CHECKOUT_FAILED.get("error", "could not reach PayNow")));
+            }
+        });
+    }
+
+    private String authenticateCustomer(LinkedStore store, CheckoutTarget target) throws IOException {
+        CustomerAuthRequest authRequest = customerAuthRequest(store, target);
+        String requestJson = new Gson().toJson(authRequest);
+        HttpPost request = this.storefrontRequest(API_CUSTOMER_AUTH_URL, requestJson, target);
+        request.setHeader("x-paynow-store-id", store.getId());
+
+        return PayNowUtils.HTTP_CLIENT.execute(request, response -> this.readResponseField(
+                response.getStatusLine().getStatusCode(), readBody(response), "customer_token"));
+    }
+
+    private static CustomerAuthRequest customerAuthRequest(LinkedStore store, CheckoutTarget target) {
+        if(store.isOfflineMinecraft()) {
+            return new CustomerAuthRequest("minecraft", target.getName());
+        }
+
+        String bedrockUsername = Floodgate.getBedrockUsername(target.getUuid());
+        if(bedrockUsername != null) {
+            return new CustomerAuthRequest("minecraft_bedrock_name", bedrockUsername);
+        }
+
+        return new CustomerAuthRequest("minecraft_uuid", target.getUuid().toString());
+    }
+
+    private String createCheckout(List<String> productIds, String customerToken, CheckoutTarget target) throws IOException {
+        String requestJson = new Gson().toJson(new CheckoutRequest(productIds));
+        HttpPost request = this.storefrontRequest(API_CHECKOUT_URL, requestJson, target);
+        request.setHeader("Authorization", "Customer " + customerToken);
+
+        return PayNowUtils.HTTP_CLIENT.execute(request, response -> this.readResponseField(
+                response.getStatusLine().getStatusCode(), readBody(response), "url"));
+    }
+
+    private HttpPost storefrontRequest(URI uri, String requestJson, CheckoutTarget target) throws IOException {
+        this.debug(requestJson);
+
+        HttpPost request = new HttpPost(uri);
+        request.setHeader("Content-Type", "application/json");
+        request.setHeader("Accept", "application/json");
+        if(target.getIp() != null) {
+            request.setHeader("x-paynow-customer-ip", target.getIp());
+        }
+        request.setEntity(new StringEntity(requestJson));
+        return request;
+    }
+
+    private static String readBody(HttpResponse response) throws IOException {
+        return response.getEntity() == null ? null : EntityUtils.toString(response.getEntity());
+    }
+
+    private String readResponseField(int statusCode, String body, String field) throws CheckoutException {
+        JsonObject responseJson = parseJsonObject(body);
+
+        if(!PayNowUtils.isSuccess(statusCode)) {
+            this.debug("Checkout response (HTTP " + statusCode + "): " + body);
+            String message = responseJson == null ? null : getString(responseJson, "message", null);
+            throw new CheckoutException(message != null ? message : "PayNow returned status " + statusCode);
+        }
+
+        String value = responseJson == null ? null : getString(responseJson, field, null);
+        if(value == null) {
+            this.debug("Checkout response missing " + field + ": " + body);
+            throw new CheckoutException("PayNow returned an unexpected response");
+        }
+
+        return value;
     }
 
     public void registerEvent(PayNowEvent event) {

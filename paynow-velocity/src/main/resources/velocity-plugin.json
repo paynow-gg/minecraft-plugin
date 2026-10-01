@@ -4,6 +4,6 @@
   "version":"${version}",
   "url":"https://paynow.gg",
   "authors":["PayNow"],
-  "dependencies":[],
+  "dependencies":[{"id":"floodgate","optional":true}],
   "main":"gg.paynow.paynowvelocity.PayNowVelocity"
 }

@@ -1,4 +1,5 @@
 name: paynow
 version: ${version}
 author: PayNow
+softDepends: [floodgate]
 main: gg.paynow.paynowbungee.PayNowBungee

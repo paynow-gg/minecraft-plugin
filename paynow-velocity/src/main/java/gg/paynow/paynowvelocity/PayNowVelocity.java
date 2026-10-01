@@ -120,6 +120,10 @@ public class PayNowVelocity {
         return payNowLib;
     }
 
+    public ProxyServer getServer() {
+        return server;
+    }
+
     public static PayNowVelocity getInstance() {
         return instance;
     }

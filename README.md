@@ -20,6 +20,14 @@ To connect your server with the PayNow gameserver, set your unique PayNow token 
 
 Replace `<token>` with your actual PayNow token.
 
+### Sending a Checkout Link
+
+To create a checkout for one or more packages and send the payment link to an online player, use:
+
+```plaintext
+/paynow checkout <username> <packageId> [packageId...]
+```
+
 ### Adjusting Fetch Interval
 
 The default fetch interval is recommended for most servers, but you can adjust it to meet your specific needs by modifying the config.

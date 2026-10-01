@@ -1,5 +1,6 @@
 name: PayNow
 author: PayNow
+softdepend: [floodgate]
 version: ${version}
 main: gg.paynow.paynowbukkit.PayNowBukkit
 api-version: "1.13"

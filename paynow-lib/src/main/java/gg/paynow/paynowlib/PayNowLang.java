@@ -23,7 +23,13 @@ public enum PayNowLang {
 
     TOKEN_UPDATED("link.token-updated", "<green>API token updated"),
     NO_PERMISSION("command.no-permission", "<red>You do not have permission to use this command"),
-    INVALID_ARGUMENTS("command.invalid-arguments", "<red>Invalid arguments");
+    INVALID_ARGUMENTS("command.invalid-arguments", "<red>Invalid arguments"),
+    PLAYER_NOT_ONLINE("checkout.player-not-online", "<red><player> is not online"),
+    CHECKOUT_LINK("checkout.link", "<green><u><link>Click here to complete your purchase</link></u>"),
+    CHECKOUT_LINK_BEDROCK("checkout.link-bedrock", "<green>Open this link in your browser to complete your purchase: <url>"),
+    CHECKOUT_SENT("checkout.sent", "<green>Checkout link sent to <player>"),
+    CHECKOUT_PLAYER_LEFT("checkout.player-left", "<red><player> went offline before the checkout link was ready"),
+    CHECKOUT_FAILED("checkout.failed", "<red>Failed to create checkout: <error>");
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 

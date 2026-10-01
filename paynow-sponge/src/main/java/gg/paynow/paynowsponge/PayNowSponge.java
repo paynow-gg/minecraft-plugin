@@ -145,6 +145,10 @@ public class PayNowSponge {
         return payNowLib;
     }
 
+    public PluginContainer getContainer() {
+        return container;
+    }
+
     public static PayNowSponge getInstance() {
         return instance;
     }
