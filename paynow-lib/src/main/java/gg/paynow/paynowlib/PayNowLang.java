@@ -52,7 +52,17 @@ public enum PayNowLang {
     }
 
     public static void load(File langFile, Consumer<String> warn) {
-        Map<String, String> fileTemplates = read(langFile, warn);
+        Map<String, String> fileTemplates;
+        try {
+            fileTemplates = read(langFile);
+        } catch (IOException | JsonParseException e) {
+            warn.accept("Failed to read " + langFile.getName() + ", using default messages until it's fixed: " + e.getMessage());
+            for(PayNowLang lang : values()) {
+                lang.template = lang.defaultTemplate;
+            }
+            return;
+        }
+
         boolean missingKeys = fileTemplates == null;
 
         Map<String, String> templates = new LinkedHashMap<>();
@@ -71,14 +81,11 @@ public enum PayNowLang {
         }
     }
 
-    private static Map<String, String> read(File langFile, Consumer<String> warn) {
+    private static Map<String, String> read(File langFile) throws IOException {
         if(!langFile.exists()) return null;
 
         try(Reader reader = Files.newBufferedReader(langFile.toPath(), StandardCharsets.UTF_8)) {
             return GSON.fromJson(reader, new TypeToken<Map<String, String>>(){}.getType());
-        } catch (IOException | JsonParseException e) {
-            warn.accept("Failed to read " + langFile.getName() + ", using default messages: " + e.getMessage());
-            return null;
         }
     }
 

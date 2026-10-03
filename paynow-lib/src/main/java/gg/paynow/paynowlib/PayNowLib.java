@@ -20,6 +20,7 @@ import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
 
@@ -126,7 +127,7 @@ public class PayNowLib {
                 request.setHeader("Content-Type", "application/json");
                 request.setHeader("Authorization", "Gameserver " + apiToken);
                 request.setHeader("Accept", "application/json");
-                request.setEntity(new StringEntity(formattedPlayers));
+                request.setEntity(new StringEntity(formattedPlayers, ContentType.APPLICATION_JSON));
 
                 ResponseHandler<String> responseHandler = response -> {
                     String body = response.getEntity() == null ? null : EntityUtils.toString(response.getEntity());
@@ -206,7 +207,7 @@ public class PayNowLib {
             request.setHeader("Content-Type", "application/json");
             request.setHeader("Authorization", "Gameserver " + apiToken);
             request.setHeader("Accept", "application/json");
-            request.setEntity(new StringEntity(formatted));
+            request.setEntity(new StringEntity(formatted, ContentType.APPLICATION_JSON));
 
             ResponseHandler<String> responseHandler = response -> {
                 String body = response.getEntity() == null ? null : EntityUtils.toString(response.getEntity());
@@ -247,7 +248,7 @@ public class PayNowLib {
                 request.setHeader("Content-Type", "application/json");
                 request.setHeader("Authorization", "Gameserver " + apiToken);
                 request.setHeader("Accept", "application/json");
-                request.setEntity(new StringEntity(requestJson));
+                request.setEntity(new StringEntity(requestJson, ContentType.APPLICATION_JSON));
 
                 ResponseHandler<String> responseHandler = response -> {
                     String body = response.getEntity() == null ? null : EntityUtils.toString(response.getEntity());
@@ -270,14 +271,14 @@ public class PayNowLib {
                 if(responseBody == null) return;
 
                 log(responseBody);
-                handleLinkResponse(responseBody);
+                handleLinkResponse(responseBody, apiToken);
             } catch (IOException e) {
                 severe("Couldn't reach PayNow to link this server. Check that the server can connect to the internet." + LINK_RETRY_HINT);
             }
         });
     }
 
-    private void handleLinkResponse(String responseBody) {
+    private void handleLinkResponse(String responseBody, String linkedToken) {
         JsonObject responseJson = parseJsonObject(responseBody);
         if(responseJson == null) {
             this.warn("Couldn't link to PayNow because its response couldn't be read." + LINK_RETRY_HINT);
@@ -310,7 +311,7 @@ public class PayNowLib {
         String storeId = getString(responseJson, "store_id", null);
         if(storeId == null) {
             this.warn("PayNow didn't return this server's store, so /paynow checkout won't work until the next link.");
-        } else {
+        } else if(linkedToken.equals(this.config.getApiToken())) {
             this.linkedStore = new LinkedStore(storeId, getString(responseJson, "store_platform", null));
         }
 
@@ -374,6 +375,9 @@ public class PayNowLib {
             } catch (IOException e) {
                 this.severe("Failed to create checkout: error executing request");
                 serverThread.execute(() -> sendToSender.accept(PayNowLang.CHECKOUT_FAILED.get("error", "could not reach PayNow")));
+            } catch (RuntimeException e) {
+                this.severe("Failed to create checkout: " + e);
+                this.debug(Arrays.toString(e.getStackTrace()));
             }
         });
     }
@@ -419,7 +423,7 @@ public class PayNowLib {
         if(target.getIp() != null) {
             request.setHeader("x-paynow-customer-ip", target.getIp());
         }
-        request.setEntity(new StringEntity(requestJson));
+        request.setEntity(new StringEntity(requestJson, ContentType.APPLICATION_JSON));
         return request;
     }
 
@@ -480,7 +484,7 @@ public class PayNowLib {
                 request.setHeader("Content-Type", "application/json");
                 request.setHeader("Authorization", "Gameserver " + apiToken);
                 request.setHeader("Accept", "application/json");
-                request.setEntity(new StringEntity(requestJson));
+                request.setEntity(new StringEntity(requestJson, ContentType.APPLICATION_JSON));
 
                 int statusCode = PayNowUtils.HTTP_CLIENT.execute(request, response -> response.getStatusLine().getStatusCode());
                 if(!PayNowUtils.isSuccess(statusCode)) {
