@@ -35,6 +35,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -68,6 +69,7 @@ public class PayNowLib {
     private final List<String> commandsToAcknowledge;
     private final Object commandLock = new Object();
     private final AtomicBoolean fetchInProgress = new AtomicBoolean(false);
+    private final AtomicInteger consecutiveFetchFailures = new AtomicInteger(0);
 
     private final ConcurrentLinkedQueue<PayNowEvent> eventQueue;
 
@@ -131,8 +133,9 @@ public class PayNowLib {
 
                 ResponseHandler<String> responseHandler = response -> {
                     String body = response.getEntity() == null ? null : EntityUtils.toString(response.getEntity());
-                    if(response.getStatusLine().getStatusCode() != 200) {
-                        severe("Failed to fetch commands: " + body);
+                    int statusCode = response.getStatusLine().getStatusCode();
+                    if(statusCode != 200) {
+                        severe("Failed to fetch commands (HTTP " + statusCode + "): " + body);
                         return null;
                     }
 
@@ -140,10 +143,20 @@ public class PayNowLib {
                 };
 
                 String responseBody = PayNowUtils.HTTP_CLIENT.execute(request, responseHandler);
+                if(responseBody == null) {
+                    this.consecutiveFetchFailures.incrementAndGet();
+                    return;
+                }
+
+                int failedAttempts = this.consecutiveFetchFailures.getAndSet(0);
+                if(failedAttempts > 0) {
+                    this.log("Reconnected to PayNow after " + failedAttempts + " failed attempts");
+                }
 
                 handleResponse(responseBody);
             } catch (IOException e) {
-                severe("Failed to fetch commands: error executing request");
+                this.consecutiveFetchFailures.incrementAndGet();
+                severe("Failed to fetch commands: couldn't reach PayNow (" + e.getMessage() + ")");
             } finally {
                 this.fetchInProgress.set(false);
             }
@@ -151,11 +164,15 @@ public class PayNowLib {
     }
 
     public int handleResponse(String responseBody) {
-        Gson gson = new Gson();
-        List<QueuedCommand> commands = gson.fromJson(responseBody, new TypeToken<List<QueuedCommand>>(){}.getType());
+        List<QueuedCommand> commands;
+        try {
+            commands = new Gson().fromJson(responseBody, new TypeToken<List<QueuedCommand>>(){}.getType());
+        } catch (JsonParseException e) {
+            commands = null;
+        }
+
         if(commands == null) {
-            this.severe("Failed to parse commands");
-            this.severe(responseBody);
+            this.severe("Failed to parse commands: " + responseBody);
             return 0;
         }
 
