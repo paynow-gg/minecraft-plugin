@@ -137,7 +137,7 @@ public class PayNowLib {
                     String body = response.getEntity() == null ? null : EntityUtils.toString(response.getEntity());
                     int statusCode = response.getStatusLine().getStatusCode();
                     if(statusCode != 200) {
-                        severe("Failed to fetch commands (HTTP " + statusCode + "): " + body);
+                        severe("Failed to fetch commands " + describeError(statusCode, body));
                         return null;
                     }
 
@@ -238,8 +238,9 @@ public class PayNowLib {
 
             ResponseHandler<String> responseHandler = response -> {
                 String body = response.getEntity() == null ? null : EntityUtils.toString(response.getEntity());
-                if(!PayNowUtils.isSuccess(response.getStatusLine().getStatusCode())) {
-                    this.warn("Failed to acknowledge commands: " + body);
+                int statusCode = response.getStatusLine().getStatusCode();
+                if(!PayNowUtils.isSuccess(statusCode)) {
+                    this.warn("Failed to acknowledge commands " + describeError(statusCode, body));
                 } else {
                     this.commandsToAcknowledge.removeAll(commands);
                 }
@@ -286,7 +287,7 @@ public class PayNowLib {
                         if(statusCode == 401 || statusCode == 403) {
                             this.warn("PayNow rejected this token. Copy it again from your PayNow dashboard and run /paynow link <token>.");
                         } else {
-                            this.warn("Couldn't link to PayNow (HTTP " + statusCode + ")." + LINK_RETRY_HINT);
+                            this.warn("Couldn't link to PayNow " + describeError(statusCode, body) + "." + LINK_RETRY_HINT);
                         }
                         return null;
                     }
@@ -350,6 +351,16 @@ public class PayNowLib {
         if(hostname != null) return "\"" + hostname + "\"";
         if(ip != null) return ip;
         return "another server";
+    }
+
+    private static String describeError(int statusCode, String body) {
+        String status = "(HTTP " + statusCode + ")";
+        JsonObject error = parseJsonObject(body);
+        String message = error == null ? null : getString(error, "message", null);
+        if(message == null) return status + ": " + body;
+
+        String traceId = getString(error, "trace_id", null);
+        return status + ": " + message + (traceId == null ? "" : " (trace " + traceId + ")");
     }
 
     private static JsonObject parseJsonObject(String json) {
@@ -544,16 +555,20 @@ public class PayNowLib {
                 request.setHeader("Accept", "application/json");
                 request.setEntity(new StringEntity(requestJson, ContentType.APPLICATION_JSON));
 
-                int statusCode = PayNowUtils.HTTP_CLIENT.execute(request, response -> response.getStatusLine().getStatusCode());
-                if(PayNowUtils.isSuccess(statusCode)) {
-                    this.debug("Successfully reported " + eventsToReport.size() + " events");
-                } else if(isRetryableStatus(statusCode)) {
-                    this.warn("Failed to report events: " + statusCode);
-                    this.requeueEvents(eventsToReport);
-                } else {
-                    this.warn("PayNow rejected " + eventsToReport.size() + " events (HTTP " + statusCode + "), dropping them");
-                    this.debug(requestJson);
-                }
+                PayNowUtils.HTTP_CLIENT.execute(request, response -> {
+                    int statusCode = response.getStatusLine().getStatusCode();
+                    String body = readBody(response);
+                    if(PayNowUtils.isSuccess(statusCode)) {
+                        this.debug("Successfully reported " + eventsToReport.size() + " events");
+                    } else if(isRetryableStatus(statusCode)) {
+                        this.warn("Failed to report events " + describeError(statusCode, body));
+                        this.requeueEvents(eventsToReport);
+                    } else {
+                        this.warn("Dropping " + eventsToReport.size() + " rejected events " + describeError(statusCode, body));
+                        this.debug(requestJson);
+                    }
+                    return null;
+                });
             } catch (IOException ex) {
                 severe("Failed to report events: " + ex.getMessage());
                 debug(Arrays.toString(ex.getStackTrace()));
