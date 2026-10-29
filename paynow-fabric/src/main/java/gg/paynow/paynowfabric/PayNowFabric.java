@@ -52,7 +52,10 @@ public class PayNowFabric implements DedicatedServerModInitializer {
         this.payNowLib = new PayNowLib(command -> CompletableFuture.supplyAsync(() -> {
             try {
                 server.getCommandManager().getDispatcher().execute(command, server.getCommandSource());
-            } catch (CommandSyntaxException ignored) {}
+            } catch (CommandSyntaxException ignored) {
+            } catch (Throwable e) {
+                LOGGER.warn("[WARN] Command threw an error and won't be retried: {}", command, e);
+            }
             return true; // Assume the command always succeeds, else it gets stuck.
         }, server).join(), server.getServerIp() + ":" + server.getServerPort(), Objects.equals(motd, "") ? "Fabric Server" : motd);
 

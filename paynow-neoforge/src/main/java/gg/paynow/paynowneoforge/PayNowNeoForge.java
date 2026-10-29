@@ -60,7 +60,10 @@ public class PayNowNeoForge {
         this.payNowLib = new PayNowLib(command -> CompletableFuture.supplyAsync(() -> {
             try {
                 server.getCommands().getDispatcher().execute(command, server.createCommandSourceStack());
-            } catch (CommandSyntaxException ignored) {}
+            } catch (CommandSyntaxException ignored) {
+            } catch (Throwable e) {
+                LOGGER.warn("[WARN] Command threw an error and won't be retried: {}", command, e);
+            }
             return true; // Assume the command always succeeds, else it gets stuck.
         }, server).join(), Objects.equals(serverIp, "") ? "0.0.0.0:" + server.getPort() : serverIp + ":" + server.getPort(), Objects.equals(motd, "") ? "NeoForge Server" : motd);
 

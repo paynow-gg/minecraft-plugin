@@ -188,7 +188,14 @@ public class PayNowLib {
                 String attemptId = command.getAttemptId();
                 if(this.executedCommands.contains(attemptId) || this.commandsToAcknowledge.contains(attemptId)) continue;
 
-                boolean success = this.executeCommandCallback.apply(command.getCommand());
+                boolean success;
+                try {
+                    success = this.executeCommandCallback.apply(command.getCommand());
+                } catch (Throwable e) {
+                    this.warn("Failed to execute command: " + command.getCommand() + " (" + e + ")");
+                    continue;
+                }
+
                 if(success) {
                     this.commandsToAcknowledge.add(attemptId);
                     this.executedCommands.add(attemptId);
