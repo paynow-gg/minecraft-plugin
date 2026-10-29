@@ -202,14 +202,15 @@ public class PayNowLib {
                     this.commandsToAcknowledge.add(attemptId);
                     this.executedCommands.add(attemptId);
                     executed++;
+                    if(this.config.doesLogCommandExecutions()) {
+                        this.log("Executing command: " + command.getCommand() + " (attempt " + attemptId + ")");
+                    }
                 } else {
                     this.warn("Failed to execute command: " + command.getCommand());
                 }
             }
 
-            if(this.config.doesLogCommandExecutions()) {
-                this.debug("Received " + commands.size() + " commands, executed " + executed);
-            }
+            this.debug("Received " + commands.size() + " commands, executed " + executed);
 
             this.acknowledgeCommands();
 
