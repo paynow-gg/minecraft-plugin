@@ -478,6 +478,10 @@ public class PayNowLib {
         this.eventQueue.add(event);
     }
 
+    private static boolean isRetryableStatus(int statusCode) {
+        return statusCode == 408 || statusCode == 429 || statusCode >= 500;
+    }
+
     public void reportEvents() {
         if(this.eventQueue.isEmpty()) return;
 
@@ -512,13 +516,14 @@ public class PayNowLib {
                 request.setEntity(new StringEntity(requestJson, ContentType.APPLICATION_JSON));
 
                 int statusCode = PayNowUtils.HTTP_CLIENT.execute(request, response -> response.getStatusLine().getStatusCode());
-                if(!PayNowUtils.isSuccess(statusCode)) {
-                    this.warn("Failed to report events: " + statusCode);
-                    // Re-add events to the front of the queue if failed to report
-                    // Using addAll will append them, maintaining order
-                    eventsToReport.forEach(this.eventQueue::offer);
-                }else {
+                if(PayNowUtils.isSuccess(statusCode)) {
                     this.debug("Successfully reported " + eventsToReport.size() + " events");
+                } else if(isRetryableStatus(statusCode)) {
+                    this.warn("Failed to report events: " + statusCode);
+                    eventsToReport.forEach(this.eventQueue::offer);
+                } else {
+                    this.warn("PayNow rejected " + eventsToReport.size() + " events (HTTP " + statusCode + "), dropping them");
+                    this.debug(requestJson);
                 }
             } catch (IOException ex) {
                 severe("Failed to report events: " + ex.getMessage());
