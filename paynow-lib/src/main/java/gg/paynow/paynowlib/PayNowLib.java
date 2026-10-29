@@ -88,7 +88,7 @@ public class PayNowLib {
 
     public PayNowLib(Function<String, Boolean> executeCommandCallback, String ip, String motd) {
         this.executeCommandCallback = executeCommandCallback;
-        this.executedCommands = new CommandHistory(25);
+        this.executedCommands = new CommandHistory(500);
         this.commandsToAcknowledge = new ArrayList<>();
         this.eventQueue = new ConcurrentLinkedQueue<>();
 
@@ -185,12 +185,13 @@ public class PayNowLib {
         synchronized (this.commandLock) {
             int executed = 0;
             for (QueuedCommand command : commands) {
-                if(this.executedCommands.contains(command.getAttemptId())) continue;
+                String attemptId = command.getAttemptId();
+                if(this.executedCommands.contains(attemptId) || this.commandsToAcknowledge.contains(attemptId)) continue;
 
                 boolean success = this.executeCommandCallback.apply(command.getCommand());
                 if(success) {
-                    this.commandsToAcknowledge.add(command.getAttemptId());
-                    this.executedCommands.add(command.getAttemptId());
+                    this.commandsToAcknowledge.add(attemptId);
+                    this.executedCommands.add(attemptId);
                     executed++;
                 } else {
                     this.warn("Failed to execute command: " + command.getCommand());
