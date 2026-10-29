@@ -59,6 +59,8 @@ public class PayNowLib {
 
     private static final String LINK_RETRY_HINT = " Run /paynow link <token> to try again. If it keeps failing, contact PayNow support.";
 
+    private static final int MAX_QUEUED_EVENTS = 1000;
+
     private static final URI API_QUEUE_URL = URI.create("https://api.paynow.gg/v1/delivery/command-queue/");
     private static final URI API_LINK_URL = URI.create("https://api.paynow.gg/v1/delivery/gameserver/link");
     private static final URI API_EVENTS_URL = URI.create("https://api.paynow.gg/v1/delivery/events");
@@ -476,6 +478,33 @@ public class PayNowLib {
 
     public void registerEvent(PayNowEvent event) {
         this.eventQueue.add(event);
+        this.trimEventQueue();
+    }
+
+    private void requeueEvents(List<PayNowEvent> failedEvents) {
+        List<PayNowEvent> events = new ArrayList<>(failedEvents);
+        PayNowEvent event;
+        while ((event = this.eventQueue.poll()) != null) {
+            events.add(event);
+        }
+
+        int dropped = Math.max(0, events.size() - MAX_QUEUED_EVENTS);
+        events.subList(dropped, events.size()).forEach(this.eventQueue::offer);
+
+        if(dropped > 0) {
+            this.warn("Event queue is full, dropped " + dropped + " events");
+        }
+    }
+
+    private void trimEventQueue() {
+        int dropped = 0;
+        while(this.eventQueue.size() > MAX_QUEUED_EVENTS && this.eventQueue.poll() != null) {
+            dropped++;
+        }
+
+        if(dropped > 0) {
+            this.warn("Event queue is full, dropped " + dropped + " events");
+        }
     }
 
     private static boolean isRetryableStatus(int statusCode) {
@@ -520,7 +549,7 @@ public class PayNowLib {
                     this.debug("Successfully reported " + eventsToReport.size() + " events");
                 } else if(isRetryableStatus(statusCode)) {
                     this.warn("Failed to report events: " + statusCode);
-                    eventsToReport.forEach(this.eventQueue::offer);
+                    this.requeueEvents(eventsToReport);
                 } else {
                     this.warn("PayNow rejected " + eventsToReport.size() + " events (HTTP " + statusCode + "), dropping them");
                     this.debug(requestJson);
@@ -528,8 +557,7 @@ public class PayNowLib {
             } catch (IOException ex) {
                 severe("Failed to report events: " + ex.getMessage());
                 debug(Arrays.toString(ex.getStackTrace()));
-                // Re-add events to the queue if failed to report
-                eventsToReport.forEach(this.eventQueue::offer);
+                this.requeueEvents(eventsToReport);
             }
         });
     }
