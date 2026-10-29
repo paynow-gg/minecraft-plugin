@@ -105,7 +105,8 @@ public class PayNowNeoForge {
         if (event.getEntity().level().isClientSide) return;
         ServerPlayer player = event.getEntity() instanceof ServerPlayer ? (ServerPlayer) event.getEntity() : null;
         if (player == null) return;
-        String ip = player.getIpAddress();
+        String ip = PayNowUtils.getIpAddress(player.connection.getRemoteAddress());
+        if (ip == null) return;
         PayNowEvent payNowEvent = new PayNowEvent("player_join", new Date(), new PlayerJoinEventData(ip, player.getUUID()));
         this.payNowLib.registerEvent(payNowEvent);
     }

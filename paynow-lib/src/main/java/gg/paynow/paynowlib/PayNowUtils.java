@@ -5,6 +5,9 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -31,6 +34,12 @@ public class PayNowUtils {
 
     public static boolean isSuccess(int statusCode) {
         return statusCode >= 200 && statusCode < 300;
+    }
+
+    public static String getIpAddress(SocketAddress address) {
+        if (!(address instanceof InetSocketAddress)) return null;
+        InetAddress inetAddress = ((InetSocketAddress) address).getAddress();
+        return inetAddress == null ? null : inetAddress.getHostAddress();
     }
 
     public static void shutdown() {

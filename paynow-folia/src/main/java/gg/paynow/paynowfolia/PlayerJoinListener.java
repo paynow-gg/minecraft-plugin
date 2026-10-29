@@ -1,5 +1,6 @@
 package gg.paynow.paynowfolia;
 
+import gg.paynow.paynowlib.PayNowUtils;
 import gg.paynow.paynowlib.events.PayNowEvent;
 import gg.paynow.paynowlib.events.PlayerJoinEventData;
 import org.bukkit.entity.Player;
@@ -14,12 +15,8 @@ public class PlayerJoinListener implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent e) {
         Player player = e.getPlayer();
-        String ip;
-        if (player.getAddress() == null) {
-            ip = "null";
-        } else {
-            ip = player.getAddress().getHostString();
-        }
+        String ip = PayNowUtils.getIpAddress(player.getAddress());
+        if (ip == null) return;
         PayNowEvent payNowEvent = new PayNowEvent("player_join", new Date(), new PlayerJoinEventData(ip, player.getUniqueId()));
         PayNowFolia.getInstance().getPayNowLib().registerEvent(payNowEvent);
     }
