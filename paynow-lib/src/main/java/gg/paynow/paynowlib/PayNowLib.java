@@ -185,10 +185,17 @@ public class PayNowLib {
         if(commands.isEmpty()) return 0;
 
         synchronized (this.commandLock) {
+            int attempted = 0;
             int executed = 0;
             for (QueuedCommand command : commands) {
                 String attemptId = command.getAttemptId();
                 if(this.executedCommands.contains(attemptId) || this.commandsToAcknowledge.contains(attemptId)) continue;
+
+                if(attempted > 0) {
+                    this.waitBetweenCommands();
+                    if(shouldStopProcessingCommands()) break;
+                }
+                attempted++;
 
                 boolean success;
                 try {
@@ -216,6 +223,22 @@ public class PayNowLib {
 
             return executed;
         }
+    }
+
+    private void waitBetweenCommands() {
+        int delayMillis = this.config.getDelayBetweenCommandsMillis();
+        if(delayMillis <= 0) return;
+
+        this.acknowledgeCommands();
+        try {
+            Thread.sleep(delayMillis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private static boolean shouldStopProcessingCommands() {
+        return Thread.currentThread().isInterrupted() || PayNowUtils.ASYNC_EXEC.isShutdown();
     }
 
     private void acknowledgeCommands() {
@@ -620,6 +643,10 @@ public class PayNowLib {
 
         if(!exists) {
             this.savePayNowConfig(configFile);
+        }
+
+        if(this.config.isDelayBetweenCommandsAboveMax()) {
+            this.warn("delay_between_commands_ms is above the maximum, using " + PayNowConfig.MAX_DELAY_BETWEEN_COMMANDS_MILLIS + "ms");
         }
 
         PayNowLang.load(new File(configFile.getParentFile(), "lang.json"), this::warn);

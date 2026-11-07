@@ -32,6 +32,12 @@ To create a checkout for one or more packages and send the payment link to an on
 
 The default fetch interval is recommended for most servers, but you can adjust it to meet your specific needs by modifying the config.
 
+### Delaying Between Commands
+
+By default, queued commands run back to back. To wait between each one, set `delay_between_commands_ms` in the config to the number of milliseconds to wait. For example, `1000` waits one second between commands. The maximum is `10000` (10 seconds). Higher values use the maximum.
+
+We do not recommend changing this value from `0`. Only use this setting if you have plugins that require it. The plugin doesn't fetch new commands until the current batch finishes, so a long delay also holds up every purchase behind it. A full batch of 50 commands at the maximum delay takes about 8 minutes.
+
 ## Support
 
 For support, questions, or more information, join our Discord community:
